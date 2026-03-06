@@ -173,6 +173,7 @@ export function createTask(data, targetType, targetId) {
     color: data.color || null,
     calendarColor: data.calendarColor || null,
     notes: data.notes || [],
+    attachments: [],
     createdAt: new Date().toISOString(),
     comments: [],
   }

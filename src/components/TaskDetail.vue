@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
 import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
-import { findTask, addComment, deleteTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment } from '@/stores/boardStore'
+import { findTask, addComment, deleteTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import ColorPicker from './ColorPicker.vue'
@@ -135,6 +135,50 @@ function getLabel(id) {
 function handleDelete() {
   deleteTask(task.value.id)
   closeTaskDetail()
+}
+
+/* ── Attachments ──────────────────────────── */
+const fileInput = ref(null)
+
+function triggerUpload() {
+  fileInput.value?.click()
+}
+
+function handleFileUpload(event) {
+  const files = Array.from(event.target.files || [])
+  if (!files.length || !task.value) return
+  const existing = task.value.attachments ?? []
+  const added = files.map(file => ({
+    id: Date.now() + Math.random(),
+    filename: file.name,
+    url: URL.createObjectURL(file),
+    mime_type: file.type,
+    size_bytes: file.size,
+    uploaded_at: new Date().toISOString(),
+  }))
+  updateTask(task.value.id, { attachments: [...existing, ...added] })
+  event.target.value = ''
+}
+
+function removeAttachment(attachId) {
+  if (!task.value) return
+  const updated = (task.value.attachments ?? []).filter(a => a.id !== attachId)
+  updateTask(task.value.id, { attachments: updated })
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function fileIcon(mimeType) {
+  if (!mimeType) return 'file'
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  if (mimeType.includes('pdf')) return 'pdf'
+  return 'file'
 }
 </script>
 
@@ -343,6 +387,36 @@ function handleDelete() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <!-- Attachments -->
+            <div class="section">
+              <div class="section-title-row">
+                <span class="section-title">Attachments <span class="comment-count">{{ task.attachments?.length ?? 0 }}</span></span>
+                <button class="note-add-btn" @click="triggerUpload">
+                  <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Upload
+                </button>
+              </div>
+              <input ref="fileInput" type="file" multiple class="attach-file-input" @change="handleFileUpload" />
+              <div v-if="task.attachments?.length" class="attach-list">
+                <div v-for="a in task.attachments" :key="a.id" class="attach-row">
+                  <div class="attach-icon">
+                    <svg v-if="fileIcon(a.mime_type) === 'image'" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <svg v-else-if="fileIcon(a.mime_type) === 'video'" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                    <svg v-else-if="fileIcon(a.mime_type) === 'pdf'" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    <svg v-else width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="attach-info">
+                    <a :href="a.url" target="_blank" rel="noopener" class="attach-name">{{ a.filename }}</a>
+                    <span class="attach-meta">{{ formatFileSize(a.size_bytes) }}{{ a.size_bytes ? ' · ' : '' }}{{ formatDateTime(a.uploaded_at) }}</span>
+                  </div>
+                  <button class="attach-remove" @click="removeAttachment(a.id)" title="Remove attachment">
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div v-else class="empty-text">No attachments yet.</div>
             </div>
 
             <!-- Comments -->
@@ -1002,4 +1076,65 @@ function handleDelete() {
 .detail-slide-leave-to .detail-panel {
   transform: translateX(100%);
 }
+
+/* Attachments */
+.attach-file-input { display: none; }
+.attach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.attach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: border-color 0.12s;
+}
+.attach-row:hover { border-color: var(--color-accent); }
+.attach-icon {
+  color: var(--color-text-3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.attach-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.attach-name {
+  font-size: 13px;
+  color: var(--color-accent);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attach-name:hover { text-decoration: underline; }
+.attach-meta {
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+.attach-remove {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+.attach-remove:hover { background: var(--color-danger-bg); color: var(--color-danger); }
 </style>
