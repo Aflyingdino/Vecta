@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 
 const props = defineProps({
   project: { type: Object, required: true },
@@ -24,6 +25,8 @@ const progress = computed(() => {
 })
 
 const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', user: 'User' }
+
+const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id))
 </script>
 
 <template>
@@ -47,6 +50,20 @@ const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', user: 'User' }
         >
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <button
+          class="card-mute"
+          :class="{ 'card-mute--active': isProjectMuted }"
+          @click.prevent="toggleMuteProject(project.id)"
+          :title="isProjectMuted ? 'Unmute notifications' : 'Mute notifications'"
+        >
+          <svg v-if="!isProjectMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <svg v-else width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -150,6 +167,25 @@ const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', user: 'User' }
 }
 .project-card:hover .card-delete { opacity: 1; }
 .card-delete:hover { background: var(--color-danger-bg); color: var(--color-danger); }
+
+.card-mute {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s, color 0.1s;
+}
+.project-card:hover .card-mute { opacity: 1; }
+.card-mute--active { opacity: 1; color: #f5c842; }
+.card-mute:hover { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; }
 
 .card-desc {
   font-size: 12px;

@@ -13,6 +13,7 @@ const _state = reactive({
   notifications: [],        // { id, type, title, body, taskId, projectId, groupId, createdAt, read, archived }
   mutedProjectIds: new Set(),
   mutedGroupIds:   new Set(),
+  mutedTaskIds:    new Set(),
   mutedLabelIds:   new Set(),
   lastChecked:     null,    // ISO string — prevents duplicate alerts on reload
 })
@@ -24,6 +25,7 @@ if (_saved) {
     const p = JSON.parse(_saved)
     _state.mutedProjectIds = new Set(p.mutedProjectIds || [])
     _state.mutedGroupIds   = new Set(p.mutedGroupIds   || [])
+    _state.mutedTaskIds    = new Set(p.mutedTaskIds    || [])
     _state.mutedLabelIds   = new Set(p.mutedLabelIds   || [])
   } catch { /* ignore */ }
 }
@@ -32,6 +34,7 @@ function _savePrefs() {
   localStorage.setItem('tp_notification_prefs', JSON.stringify({
     mutedProjectIds: [..._state.mutedProjectIds],
     mutedGroupIds:   [..._state.mutedGroupIds],
+    mutedTaskIds:    [..._state.mutedTaskIds],
     mutedLabelIds:   [..._state.mutedLabelIds],
   }))
 }
@@ -45,6 +48,7 @@ export const unreadCount = computed(() =>
 )
 export const mutedProjectIds = computed(() => _state.mutedProjectIds)
 export const mutedGroupIds   = computed(() => _state.mutedGroupIds)
+export const mutedTaskIds    = computed(() => _state.mutedTaskIds)
 export const mutedLabelIds   = computed(() => _state.mutedLabelIds)
 
 /* ── Add notification ── */
@@ -52,6 +56,7 @@ export function addNotification({ type, title, body, taskId = null, projectId = 
   // Check mutes
   if (projectId && _state.mutedProjectIds.has(projectId)) return
   if (groupId   && _state.mutedGroupIds.has(groupId))     return
+  if (taskId    && _state.mutedTaskIds.has(taskId))       return
   if (labelId   && _state.mutedLabelIds.has(labelId))     return
 
   // Dedup: don't add same (type+taskId) within 5 minutes
@@ -110,6 +115,11 @@ export function toggleMuteProject(id) {
 export function toggleMuteGroup(id) {
   if (_state.mutedGroupIds.has(id)) _state.mutedGroupIds.delete(id)
   else _state.mutedGroupIds.add(id)
+  _savePrefs()
+}
+export function toggleMuteTask(id) {
+  if (_state.mutedTaskIds.has(id)) _state.mutedTaskIds.delete(id)
+  else _state.mutedTaskIds.add(id)
   _savePrefs()
 }
 export function toggleMuteLabel(id) {

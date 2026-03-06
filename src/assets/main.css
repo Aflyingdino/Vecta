@@ -3,9 +3,9 @@
 /* ── Custom theme tokens ── */
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --color-accent:       #5b5bd6;
-  --color-accent-hover: #4f4dbf;
-  --color-accent-muted: #2d2d6b;
+  --color-accent:       #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-accent-muted: #1e3a5f;
   --color-surface-0:    #0c0c0f;
   --color-surface-1:    #111114;
   --color-surface-2:    #18181c;

@@ -6,6 +6,7 @@ import {
   moveTaskToGroup, deleteTask, renameGroup, deleteGroup, archiveGroup,
   updateGroup, projectLabels, createTask,
 } from '@/stores/boardStore'
+import { toggleMuteGroup, mutedGroupIds } from '@/stores/notificationStore'
 import { PRIORITY_OPTIONS, STATUS_OPTIONS, STATUS_META } from '@/utils/constants'
 import { formatShortDate } from '@/utils/dates'
 
@@ -96,6 +97,7 @@ function toggleLabel(id) {
 
 /* ── Computed ── */
 const accentColor = computed(() => props.group.color ?? null)
+const isGroupMuted = computed(() => mutedGroupIds.value.has(props.group.id))
 
 const groupLabels = computed(() =>
   (props.group.labelIds ?? []).map(id => projectLabels.value.find(l => l.id === id)).filter(Boolean)
@@ -263,6 +265,21 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path stroke-linecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
+        <!-- Mute notifications -->
+        <button
+          class="col-icon-btn"
+          :class="{ 'col-icon-btn--muted': isGroupMuted }"
+          @click.stop="toggleMuteGroup(group.id)"
+          :title="isGroupMuted ? 'Unmute notifications' : 'Mute notifications'"
+        >
+          <svg v-if="!isGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          <svg v-else width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -498,6 +515,9 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
 /* Delete — red on hover */
 .col-icon-btn--danger { color: color-mix(in srgb, var(--color-danger) 60%, var(--color-text-3)); }
 .col-icon-btn--danger:hover { color: var(--color-danger); background: var(--color-danger-bg); }
+/* Muted — amber when active */
+.col-icon-btn--muted { color: #f5c842; }
+.col-icon-btn--muted:hover { color: #f5c842; background: color-mix(in srgb, #f5c842 15%, transparent); }
 /* Confirm yes (green) */
 .col-icon-btn--confirm-yes { color: #46a758; }
 .col-icon-btn--confirm-yes:hover { color: #46a758; background: color-mix(in srgb, #46a758 15%, transparent); }

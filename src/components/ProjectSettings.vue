@@ -1,6 +1,7 @@
 ﻿<script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ui, closeSettings } from '@/stores/uiStore'
+import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
 import { activeProject, addMember, removeMember, updateMemberRole } from '@/stores/projectStore'
 import ColorPicker from './ColorPicker.vue'
@@ -66,6 +67,8 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
   { value: 'user',  label: 'Member' },
 ]
+
+const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.value.has(activeProject.value.id))
 </script>
 
 <template>
@@ -76,6 +79,22 @@ const ROLES = [
 
           <div class="settings-header">
             <span class="settings-title">Project Settings</span>
+            <button
+              v-if="activeProject"
+              class="settings-mute-btn"
+              :class="{ 'settings-mute-btn--active': isProjectMuted }"
+              :title="isProjectMuted ? 'Unmute project notifications' : 'Mute project notifications'"
+              @click="toggleMuteProject(activeProject.id)"
+            >
+              <svg v-if="!isProjectMuted" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <svg v-else width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
+              </svg>
+              {{ isProjectMuted ? 'Muted' : 'Mute' }}
+            </button>
             <button class="close-btn" @click="closeSettings">
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -288,6 +307,21 @@ const ROLES = [
   background: var(--color-surface-3);
   color: var(--color-text-1);
 }
+.settings-mute-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-3);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.settings-mute-btn:hover { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; border-color: color-mix(in srgb, #f5c842 40%, transparent); }
+.settings-mute-btn--active { color: #f5c842; border-color: color-mix(in srgb, #f5c842 40%, transparent); }
 .settings-body {
   display: flex;
   flex-direction: column;

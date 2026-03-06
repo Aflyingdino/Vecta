@@ -1,16 +1,10 @@
 <script setup>
-import { ref } from 'vue'
 import PublicNav from '@/components/PublicNav.vue'
 
-const name = ref('')
-const email = ref('')
-const message = ref('')
-const sent = ref(false)
-
-function handleSubmit() {
-  // API_CALL: POST /api/contact { name, email, message }
-  sent.value = true
-}
+const creators = [
+  { name: 'Kenji Bras', initials: 'KB' },
+  { name: 'Casper Gutteling', initials: 'CG' },
+]
 </script>
 
 <template>
@@ -18,104 +12,146 @@ function handleSubmit() {
     <PublicNav />
 
     <main class="contact-content">
-      <h1>Contact us</h1>
-      <p class="lead">Have a question or feedback? We'd love to hear from you.</p>
 
-      <div v-if="sent" class="success-msg">
-        ✓ Message sent! We'll get back to you soon.
-      </div>
+      <header class="contact-header">
+        <div class="contact-label">Contact</div>
+        <h1>Get in touch</h1>
+        <p class="lead">Questions or feedback? Reach out directly.</p>
+      </header>
 
-      <form v-else class="contact-form" @submit.prevent="handleSubmit">
-        <label class="form-label">
-          Name
-          <input v-model="name" type="text" class="form-input" placeholder="Your name" required />
-        </label>
-        <label class="form-label">
-          Email
-          <input v-model="email" type="email" class="form-input" placeholder="you@example.com" required />
-        </label>
-        <label class="form-label">
-          Message
-          <textarea v-model="message" class="form-input form-textarea" placeholder="Your message…" rows="5" required></textarea>
-        </label>
-        <button type="submit" class="btn-submit">Send message</button>
-      </form>
+      <section class="section">
+        <h2 class="section-title">Team</h2>
+        <div class="creator-grid">
+          <div class="creator-card" v-for="c in creators" :key="c.name">
+            <div class="creator-initials">{{ c.initials }}</div>
+            <div>
+              <div class="creator-name">{{ c.name }}</div>
+              <div class="creator-role">Developer</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Email</h2>
+        <a href="mailto:hello@taskpilot.dev" class="contact-email">hello@taskpilot.dev</a>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Portfolio</h2>
+        <a href="#" class="portfolio-link">View our portfolio</a>
+      </section>
+
     </main>
   </div>
 </template>
 
 <style scoped>
 .public-page { min-height: 100vh; background: var(--color-surface-0); color: var(--color-text-1); }
-.pub-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 48px;
-  height: 60px;
+
+.contact-content {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 64px 32px 88px;
+}
+
+.contact-header {
+  margin-bottom: 56px;
+  padding-bottom: 44px;
   border-bottom: 1px solid var(--color-border-sub);
-  position: sticky;
-  top: 0;
-  background: var(--color-surface-0);
-  z-index: 10;
 }
-.pub-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; }
-.pub-links { display: flex; align-items: center; gap: 16px; }
-.pub-links a { font-size: 13px; color: var(--color-text-2); text-decoration: none; }
-.pub-links a:hover { color: var(--color-text-1); }
-.btn-accent {
-  padding: 7px 16px;
-  border-radius: 7px;
-  background: var(--color-accent) !important;
-  color: #fff !important;
+.contact-label {
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 12px;
 }
-.contact-content { max-width: 560px; margin: 0 auto; padding: 64px 32px; }
-.contact-content h1 { font-size: 36px; font-weight: 800; margin-bottom: 12px; }
-.lead { font-size: 16px; color: var(--color-text-2); margin-bottom: 40px; line-height: 1.7; }
-.success-msg {
-  padding: 16px 20px;
-  background: color-mix(in srgb, #46a758 15%, transparent);
-  border: 1px solid color-mix(in srgb, #46a758 40%, transparent);
-  color: #46a758;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 500;
+.contact-header h1 {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
 }
-.contact-form { display: flex; flex-direction: column; gap: 18px; }
-.form-label {
+.lead {
+  font-size: 15px;
+  color: var(--color-text-2);
+  line-height: 1.7;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-3);
+  margin-bottom: 14px;
+}
+
+.creator-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-2);
+  gap: 8px;
 }
-.form-input {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
+.creator-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
   background: var(--color-surface-1);
-  color: var(--color-text-1);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.15s;
-  font-family: inherit;
-  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
 }
-.form-input:focus { border-color: var(--color-accent); }
-.form-textarea { min-height: 120px; }
-.btn-submit {
-  padding: 12px;
-  border: none;
+.creator-initials {
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  background: var(--color-accent);
-  color: #fff;
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.creator-name {
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  color: var(--color-text-1);
+}
+.creator-role {
+  font-size: 12px;
+  color: var(--color-text-3);
+  margin-top: 2px;
+}
+
+.contact-email {
+  font-size: 14px;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.contact-email:hover { text-decoration: underline; }
+
+.portfolio-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+  text-decoration: none;
+  padding: 9px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
   transition: background 0.15s;
 }
-.btn-submit:hover { background: var(--color-accent-hover); }
+.portfolio-link:hover { background: var(--color-surface-2); }
 </style>

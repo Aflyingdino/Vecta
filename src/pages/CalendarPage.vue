@@ -266,6 +266,11 @@ function taskStyle(task) {
   }
 }
 
+function blockHeight(task) {
+  const dur = task.calendarDuration || 60
+  return Math.max(hourHeight.value / 12, dur * hourHeight.value / 60)
+}
+
 // Which day column index does a task fall on?
 function taskDayIndex(task) {
   const start = new Date(task.calendarStart)
@@ -609,8 +614,14 @@ function deadlineTasksForDay(date) {
                     @dragstart.stop.prevent
                     title="Drag to change start time"
                   ></div>
-                  <div class="task-block-inner">
-                    <span class="task-block-time">{{ formatTime(task.calendarStart) }}–{{ taskEndTimeLabel(task) }}</span>
+                  <div
+                    class="task-block-inner"
+                    :class="{
+                      'task-block-inner--compact': blockHeight(task) < 34,
+                      'task-block-inner--micro':   blockHeight(task) < 18,
+                    }"
+                  >
+                    <span v-if="blockHeight(task) >= 34" class="task-block-time">{{ formatTime(task.calendarStart) }}–{{ taskEndTimeLabel(task) }}</span>
                     <span class="task-block-name">{{ task.text }}</span>
                   </div>
                   <!-- Color palette — direct child of task-block (not inside inner) so it is not clipped -->
@@ -1050,6 +1061,16 @@ function deadlineTasksForDay(date) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.task-block-inner--compact {
+  padding: 1px 4px;
+}
+.task-block-inner--compact .task-block-name {
+  font-size: 10px;
+  line-height: 1.2;
+}
+.task-block-inner--micro .task-block-name {
+  display: none;
 }
 
 /* ── Task color swatch ── */

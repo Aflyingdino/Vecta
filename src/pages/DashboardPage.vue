@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout.vue'
 import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
+import { toggleMuteProject, mutedProjectIds, toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
 
 
 const router = useRouter()
@@ -432,13 +433,13 @@ function goToActivityTask(entry) {
                 @click="openActivityDetail(entry)"
               >
                 <!-- Checkbox -->
-                <label class="activity-checkbox" @click.stop>
-                  <input
-                    type="checkbox"
-                    :checked="selectedActivityIds.has(entry.id)"
-                    @change="toggleSelect(entry, idx, $event)"
-                  />
-                </label>
+                <div class="activity-checkbox" @click.stop="toggleSelect(entry, idx, $event)">
+                  <div class="activity-check-box" :class="{ 'activity-check-box--checked': selectedActivityIds.has(entry.id) }">
+                    <svg v-if="selectedActivityIds.has(entry.id)" width="8" height="8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                </div>
 
                 <div class="activity-icon">
                   <svg v-if="activityMeta(entry.type).icon === 'plus'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -476,6 +477,23 @@ function goToActivityTask(entry) {
                     <span v-if="!isRead(entry.id)" class="activity-unread-dot"></span>
                   </div>
                 </div>
+
+                <!-- Mute button (task if available, else project) -->
+                <button
+                  v-if="entry.taskId || entry.projectId"
+                  class="activity-mute-btn"
+                  :class="{ 'activity-mute-btn--active': entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId) }"
+                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Unmute notifications' : 'Mute notifications'"
+                  @click.stop="entry.taskId ? toggleMuteTask(entry.taskId) : toggleMuteProject(entry.projectId)"
+                >
+                  <svg v-if="!(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId))" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                  <svg v-else width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
+                  </svg>
+                </button>
               </div>
             </div>
             <div v-else class="empty-section">
@@ -875,7 +893,23 @@ function goToActivityTask(entry) {
   margin-top: 3px;
   cursor: pointer;
 }
-.activity-checkbox input { width: 13px; height: 13px; cursor: pointer; accent-color: var(--color-accent); }
+.activity-check-box {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.activity-check-box--checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
 .activity-unread-dot {
   width: 7px;
   height: 7px;
@@ -883,6 +917,25 @@ function goToActivityTask(entry) {
   background: var(--color-accent);
   flex-shrink: 0;
 }
+.activity-mute-btn {
+  flex-shrink: 0;
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.1s, background 0.1s, color 0.1s;
+}
+.activity-row:hover .activity-mute-btn { opacity: 1; }
+.activity-mute-btn--active { opacity: 1; color: #f5c842; }
+.activity-mute-btn:hover { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; }
 
 /* Activity detail modal */
 .activity-modal-overlay {

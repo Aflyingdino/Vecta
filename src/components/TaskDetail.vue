@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
+import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
 import { findTask, addComment, deleteTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
@@ -8,6 +9,7 @@ import ColorPicker from './ColorPicker.vue'
 import { STATUS_META } from '@/utils/constants'
 
 const task = computed(() => (ui.detailTaskId ? findTask(ui.detailTaskId) : null))
+const isTaskMuted = computed(() => task.value ? mutedTaskIds.value.has(task.value.id) : false)
 
 // Permission: owner/admin can always manage notes; assignees can too
 const canManageNotes = computed(() => {
@@ -146,6 +148,21 @@ function handleDelete() {
           <div class="detail-header">
             <span class="detail-panel-title">Task details</span>
             <div class="detail-header-actions">
+              <button
+                class="hdr-btn hdr-btn--mute"
+                :class="{ 'hdr-btn--muted': isTaskMuted }"
+                @click="toggleMuteTask(task.id)"
+                :title="isTaskMuted ? 'Unmute notifications' : 'Mute notifications'"
+              >
+                <svg v-if="!isTaskMuted" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <svg v-else width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
+                </svg>
+                Mute
+              </button>
               <button class="hdr-btn" @click="openEditTask(task.id); closeTaskDetail()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
@@ -464,6 +481,14 @@ function handleDelete() {
   background: var(--color-danger-bg);
   color: var(--color-danger);
   border-color: var(--color-danger-bg);
+}
+.hdr-btn--muted {
+  color: #f5c842;
+  border-color: color-mix(in srgb, #f5c842 30%, transparent);
+}
+.hdr-btn--mute:hover {
+  background: color-mix(in srgb, #f5c842 15%, transparent);
+  color: #f5c842;
 }
 .close-btn {
   display: flex;

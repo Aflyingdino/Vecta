@@ -6,6 +6,9 @@ import { groups, archivedGroups, createGroup, moveGroupToGrid, restoreGroup, del
 import { formatLongDate, formatShortDate } from '@/utils/dates'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, STATUS_META } from '@/utils/constants'
 import { openTaskDetail } from '@/stores/uiStore'
+import { toggleMuteGroup, mutedGroupIds } from '@/stores/notificationStore'
+
+const isDetailGroupMuted = computed(() => detailGroupId.value != null && mutedGroupIds.value.has(detailGroupId.value))
 
 const activeTab = ref('board') // 'board' | 'archive'
 const detailGroupId = ref(null)
@@ -293,9 +296,25 @@ function onDragEnd() {
             <!-- Panel header -->
             <div class="group-detail-hdr">
               <span class="group-detail-hdr-label">Group detail</span>
-              <button class="group-detail-close" @click="closeDetail" aria-label="Close">
+              <div class="group-detail-hdr-actions">
+                <button
+                  class="group-detail-mute"
+                  :class="{ 'group-detail-mute--active': isDetailGroupMuted }"
+                  :title="isDetailGroupMuted ? 'Unmute notifications' : 'Mute notifications'"
+                  @click="toggleMuteGroup(detailGroupId)"
+                >
+                  <svg v-if="!isDetailGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                  <svg v-else width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <button class="group-detail-close" @click="closeDetail" aria-label="Close">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
+              </div>
             </div>
 
             <!-- Scrollable body -->
@@ -750,6 +769,19 @@ function onDragEnd() {
   letter-spacing: 0.05em;
   color: var(--color-text-3);
 }
+.group-detail-hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.group-detail-mute {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; border-radius: 6px;
+  background: transparent; color: var(--color-text-3); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.group-detail-mute:hover { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; }
+.group-detail-mute--active { color: #f5c842; }
 .group-detail-close {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border: none; border-radius: 6px;
