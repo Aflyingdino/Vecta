@@ -25,7 +25,8 @@ jobs:
           node-version: 20.19.0
           cache: npm
 
-      - name: Install & build
+      - name: Install & build      git fetch origin
+      git branch -a
         run: |
           npm ci
           npm run build
