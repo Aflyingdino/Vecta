@@ -253,6 +253,77 @@ function clampString(?string $s, int $max): ?string
     return mb_substr(trim($s), 0, $max);
 }
 
+function usernameBlocklist(): array
+{
+    static $cache = null;
+
+    if (is_array($cache)) {
+        return $cache;
+    }
+
+    $path = __DIR__ . '/username_blocklist.php';
+    if (!file_exists($path)) {
+        $cache = [];
+        return $cache;
+    }
+
+    $raw = require $path;
+    if (!is_array($raw)) {
+        $cache = [];
+        return $cache;
+    }
+
+    $cache = array_values(array_unique(array_filter(array_map(static function ($item): string {
+        return is_string($item) ? trim($item) : '';
+    }, $raw), static fn($item) => $item !== '')));
+
+    return $cache;
+}
+
+function normalizeModerationText(string $value): string
+{
+    $value = mb_strtolower($value);
+    $value = strtr($value, [
+        '0' => 'o',
+        '1' => 'i',
+        '3' => 'e',
+        '4' => 'a',
+        '5' => 's',
+        '7' => 't',
+        '8' => 'b',
+        '@' => 'a',
+        '$' => 's',
+        '!' => 'i',
+    ]);
+
+    $value = preg_replace('/[^a-z0-9]/', '', $value) ?? '';
+    return preg_replace('/(.)\1{2,}/', '$1$1', $value) ?? '';
+}
+
+function hasBlockedUsernameContent(string $name): bool
+{
+    $normalizedName = normalizeModerationText($name);
+    if ($normalizedName === '') {
+        return false;
+    }
+
+    foreach (usernameBlocklist() as $blockedWord) {
+        $normalizedBlockedWord = normalizeModerationText($blockedWord);
+        if ($normalizedBlockedWord !== '' && str_contains($normalizedName, $normalizedBlockedWord)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function validateUsername(string $name): void
+{
+    if (hasBlockedUsernameContent($name)) {
+        jsonError('Username contains blocked language', 422);
+    }
+}
+
 function requireEnumValue(mixed $value, array $allowed, string $field): string
 {
     if (!is_string($value) || !in_array($value, $allowed, true)) {

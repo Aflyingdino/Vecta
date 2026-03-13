@@ -12,6 +12,8 @@ function handleRegister(): never
     $email = normalizeEmail($data['email']);
     $pass  = $data['password'];
 
+    validateUsername($name);
+
     if (!validEmail($email)) jsonError('Invalid email address', 422);
     if (!validPassword($pass)) jsonError('Password must be at least 10 characters and include letters and numbers', 422);
 
