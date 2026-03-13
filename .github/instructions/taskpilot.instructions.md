@@ -20,7 +20,7 @@ After receiving each prompt, evaluate three dimensions before doing any work:
 
 Express this as a single **Confidence %**. You may not begin implementation until confidence is **100%**. Be critical — 80% is not 100%.
 
-If confidence is below 100%, list exactly what is missing and ask for it. Do not pad the percentage.
+If confidence is below 100%, list exactly what is missing and ask for it. Do not pad the percentage. Also remember that you CANNOT start the task until you have 100% confidence. One round of clarification is preferred over multiple back-and-forth.
 
 ---
 
