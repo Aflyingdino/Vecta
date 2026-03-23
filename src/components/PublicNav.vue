@@ -5,10 +5,7 @@ import { isLoggedIn } from '@/stores/authStore'
 <template>
   <header class="pub-nav">
     <router-link to="/" class="pub-brand">
-      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="8" fill="var(--color-accent)" />
-        <path d="M8 10h16M8 16h10M8 22h13" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
-      </svg>
+      <img src="/logo.png" alt="TaskPilot logo" width="26" height="26" />
       <span>TaskPilot</span>
     </router-link>
 
