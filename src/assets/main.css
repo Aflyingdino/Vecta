@@ -19,22 +19,33 @@
   --color-danger-bg:    #2d1214;
 }
 
-/* ── Light mode theme tokens ── */
+/* ── Light mode AGGRESSIVE overrides ── */
 html.light-mode {
-  --color-accent:       #4a8cc7;
-  --color-accent-hover: #3a7ab5;
-  --color-accent-muted: #c5ddf3;
-  --color-surface-0:    #ffffff;
-  --color-surface-1:    #f8fafc;
-  --color-surface-2:    #f0f6fb;
-  --color-surface-3:    #e8f1f8;
-  --color-border:       #d1e4f0;
-  --color-border-sub:   #dfecf4;
-  --color-text-1:       #1a3650;
-  --color-text-2:       #4a6a7f;
-  --color-text-3:       #7a8fa0;
-  --color-danger:       #d84449;
-  --color-danger-bg:    #f8e8ea;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light-mode body {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Light mode CSS variables for fallback */
+html.light-mode {
+  --color-text-1: #0f172a !important;
+  --color-text-2: #475569 !important;
+  --color-text-3: #94a3b8 !important;
+  --color-surface-0: #ffffff !important;
+  --color-surface-1: #f9fafb !important;
+  --color-surface-2: #f1f5f9 !important;
+  --color-surface-3: #e2e8f0 !important;
+  --color-border: #cbd5e1 !important;
+  --color-border-sub: #e2e8f0 !important;
+  --color-accent: #3b82f6 !important;
+  --color-accent-hover: #2563eb !important;
+  --color-accent-muted: #dbeafe !important;
+  --color-danger: #ef4444 !important;
+  --color-danger-bg: #fee2e2 !important;
 }
 
 /* ── Accessibility: keyboard focus ── */
@@ -67,6 +78,22 @@ body {
 /* ── Smooth scroll ── */
 html {
   scroll-behavior: smooth;
+}
+
+/* ── Global theme/language transitions ── */
+html.theme-transition,
+html.theme-transition body,
+html.theme-transition * {
+  transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, fill 0.28s ease, stroke 0.28s ease;
+}
+
+@keyframes languageSwap {
+  0% { opacity: 0.76; transform: translateY(1px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+html.lang-transition body {
+  animation: languageSwap 0.22s ease;
 }
 
 /* ── Custom scrollbar ── */

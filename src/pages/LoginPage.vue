@@ -1,14 +1,38 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { login, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
+import { i18n } from '@/stores/i18nStore'
 
 const router = useRouter()
 const route = useRoute()
 
 const email = ref('')
 const password = ref('')
+
+const text = computed(() => (i18n.language === 'nl'
+  ? {
+      title: 'Welkom terug',
+      subtitle: 'Log in op je account',
+      email: 'E-mail',
+      password: 'Wachtwoord',
+      loginBusy: 'Bezig met inloggen...',
+      login: 'Inloggen',
+      noAccount: 'Nog geen account?',
+      signUp: 'Registreren',
+    }
+  : {
+      title: 'Welcome back',
+      subtitle: 'Log in to your account',
+      email: 'Email',
+      password: 'Password',
+      loginBusy: 'Logging in...',
+      login: 'Log in',
+      noAccount: "Don't have an account?",
+      signUp: 'Sign up',
+    }
+))
 
 async function handleLogin() {
   clearAuthError()
@@ -28,28 +52,28 @@ async function handleLogin() {
         <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
         <span>TaskPilot</span>
       </router-link>
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="auth-sub">Log in to your account</p>
+      <h1 class="auth-title">{{ text.title }}</h1>
+      <p class="auth-sub">{{ text.subtitle }}</p>
 
       <div v-if="authError" class="auth-error">{{ authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleLogin">
         <label class="form-label">
-          Email
+          {{ text.email }}
           <input v-model="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
         </label>
         <label class="form-label">
-          Password
+          {{ text.password }}
           <input v-model="password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Logging in…' : 'Log in' }}
+          {{ authLoading ? text.loginBusy : text.login }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Don't have an account? <router-link to="/register">Sign up</router-link>
+        {{ text.noAccount }} <router-link to="/register">{{ text.signUp }}</router-link>
       </p>
     </div>
   </div>

@@ -2,11 +2,13 @@
 import { useRoute } from 'vue-router'
 import { onMounted } from 'vue'
 import { applyTheme } from '@/stores/uiStore'
+import { applyLanguage } from '@/stores/i18nStore'
 
 const route = useRoute()
 
 onMounted(() => {
   applyTheme()
+  applyLanguage()
 })
 </script>
 

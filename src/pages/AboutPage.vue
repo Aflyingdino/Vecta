@@ -1,5 +1,7 @@
 <script setup>
+import { computed } from 'vue'
 import PublicNav from '@/components/PublicNav.vue'
+import { i18n } from '@/stores/i18nStore'
 
 const featureList = [
   { label: 'Kanban boards', desc: 'Custom groups with drag-and-drop task cards.' },
@@ -13,6 +15,35 @@ const featureList = [
   { label: 'Backlog panel', desc: 'A dedicated space for tasks not yet placed on the board.' },
   { label: 'Notifications', desc: 'In-app alerts when tasks are updated or assigned.' },
 ]
+
+const text = computed(() => (i18n.language === 'nl'
+  ? {
+      about: 'Over',
+      intro: 'Een projectmanagementtool gebouwd om teams te helpen plannen, volgen en opleveren zonder onnodige complexiteit.',
+      whereStarted: 'Waar het begon',
+      whatItIs: 'Wat het is',
+      whatInIt: 'Wat erin zit',
+      roles: 'Rollen en rechten',
+      publicAccess: 'Publieke toegang',
+      goal: 'Het doel',
+      owner: 'Eigenaar',
+      admin: 'Beheerder',
+      user: 'Gebruiker',
+    }
+  : {
+      about: 'About',
+      intro: 'A project management tool built to help teams plan, track, and ship work without the overhead that makes most tools feel like more work than the work itself.',
+      whereStarted: 'Where it started',
+      whatItIs: 'What it is',
+      whatInIt: 'What is in it',
+      roles: 'Roles and permissions',
+      publicAccess: 'Public access',
+      goal: 'The goal',
+      owner: 'Owner',
+      admin: 'Admin',
+      user: 'User',
+    }
+))
 </script>
 
 <template>
@@ -22,24 +53,24 @@ const featureList = [
     <main class="about-content">
 
       <header class="about-header">
-        <div class="about-label">About</div>
+        <div class="about-label">{{ text.about }}</div>
         <h1>TaskPilot</h1>
-        <p class="lead">A project management tool built to help teams plan, track, and ship work without the overhead that makes most tools feel like more work than the work itself.</p>
+        <p class="lead">{{ text.intro }}</p>
       </header>
 
       <section class="about-section">
-        <h2>Where it started</h2>
+        <h2>{{ text.whereStarted }}</h2>
         <p>TaskPilot started as a school project with a clear constraint: build something that actually works the way a team works. Not a demo, not a mockup. The goal was a real tool you could hand to a team and have them use on day one without a manual. That constraint drove every decision: keep the interface clean, keep the features purposeful, and cut anything that does not pull its weight.</p>
       </section>
 
       <section class="about-section">
-        <h2>What it is</h2>
+        <h2>{{ text.whatItIs }}</h2>
         <p>At its core, TaskPilot is a kanban-based workspace. You create a project, set up groups that match your workflow, and fill them with task cards. Each task can carry a label, a priority level, a deadline, and a running comment thread. When a task needs attention, the team gets notified inside the app.</p>
         <p class="para-spaced">Projects have member roles so the right people have the right access. Any board can also be shared as a read-only public link, so stakeholders can follow along without needing an account. Tasks that are not ready for the board live in the backlog until they are.</p>
       </section>
 
       <section class="about-section">
-        <h2>What is in it</h2>
+        <h2>{{ text.whatInIt }}</h2>
         <div class="feature-list">
           <div class="feature-row" v-for="f in featureList" :key="f.label">
             <span class="feature-row__label">{{ f.label }}</span>
@@ -49,30 +80,30 @@ const featureList = [
       </section>
 
       <section class="about-section">
-        <h2>Roles and permissions</h2>
+        <h2>{{ text.roles }}</h2>
         <div class="role-grid">
           <div class="role-card">
-            <h3>Owner</h3>
+            <h3>{{ text.owner }}</h3>
             <p>Full control. Can manage members, change settings, and delete the project.</p>
           </div>
           <div class="role-card">
-            <h3>Admin</h3>
+            <h3>{{ text.admin }}</h3>
             <p>Can manage members and settings. Cannot delete the project.</p>
           </div>
           <div class="role-card">
-            <h3>User</h3>
+            <h3>{{ text.user }}</h3>
             <p>Can create and manage tasks within the board.</p>
           </div>
         </div>
       </section>
 
       <section class="about-section">
-        <h2>Public access</h2>
+        <h2>{{ text.publicAccess }}</h2>
         <p>No account is needed to view the homepage, about, or contact pages. Any project shared via a public link is also viewable without logging in, in read-only mode. Everything else requires an account.</p>
       </section>
 
       <section class="about-section">
-        <h2>The goal</h2>
+        <h2>{{ text.goal }}</h2>
         <p>Ship a focused tool that teams can actually stick with. No feature creep, no dashboard bloat. Just the right tools, built well.</p>
       </section>
 

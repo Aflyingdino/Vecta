@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
+import { i18n } from '@/stores/i18nStore'
 
 const router = useRouter()
 
@@ -12,15 +13,44 @@ const password = ref('')
 const confirm = ref('')
 const localError = ref('')
 
+const text = computed(() => (i18n.language === 'nl'
+  ? {
+      title: 'Account aanmaken',
+      subtitle: 'Altijd gratis, geen creditcard nodig',
+      fullName: 'Volledige naam',
+      password: 'Wachtwoord',
+      confirmPassword: 'Bevestig wachtwoord',
+      createBusy: 'Account aanmaken...',
+      create: 'Account aanmaken',
+      hasAccount: 'Al een account?',
+      login: 'Inloggen',
+      mismatch: 'Wachtwoorden komen niet overeen',
+      passwordMin: 'Wachtwoord moet minimaal 6 tekens bevatten',
+    }
+  : {
+      title: 'Create account',
+      subtitle: 'Free forever, no credit card needed',
+      fullName: 'Full name',
+      password: 'Password',
+      confirmPassword: 'Confirm password',
+      createBusy: 'Creating account...',
+      create: 'Create account',
+      hasAccount: 'Already have an account?',
+      login: 'Log in',
+      mismatch: 'Passwords do not match',
+      passwordMin: 'Password must be at least 6 characters',
+    }
+))
+
 async function handleRegister() {
   clearAuthError()
   localError.value = ''
   if (password.value !== confirm.value) {
-    localError.value = 'Passwords do not match'
+    localError.value = text.value.mismatch
     return
   }
   if (password.value.length < 6) {
-    localError.value = 'Password must be at least 6 characters'
+    localError.value = text.value.passwordMin
     return
   }
   try {
@@ -40,14 +70,14 @@ const displayError = () => localError.value || authError.value
         <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
         <span>TaskPilot</span>
       </router-link>
-      <h1 class="auth-title">Create account</h1>
-      <p class="auth-sub">Free forever, no credit card needed</p>
+      <h1 class="auth-title">{{ text.title }}</h1>
+      <p class="auth-sub">{{ text.subtitle }}</p>
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleRegister">
         <label class="form-label">
-          Full name
+          {{ text.fullName }}
           <input v-model="name" type="text" class="form-input" placeholder="Jane Smith" required autocomplete="name" />
         </label>
         <label class="form-label">
@@ -55,21 +85,21 @@ const displayError = () => localError.value || authError.value
           <input v-model="email" type="email" class="form-input" placeholder="you@example.com" required autocomplete="email" />
         </label>
         <label class="form-label">
-          Password
+          {{ text.password }}
           <input v-model="password" type="password" class="form-input" placeholder="Min. 6 characters" required autocomplete="new-password" />
         </label>
         <label class="form-label">
-          Confirm password
+          {{ text.confirmPassword }}
           <input v-model="confirm" type="password" class="form-input" placeholder="Repeat password" required autocomplete="new-password" />
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Creating account…' : 'Create account' }}
+          {{ authLoading ? text.createBusy : text.create }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Already have an account? <router-link to="/login">Log in</router-link>
+        {{ text.hasAccount }} <router-link to="/login">{{ text.login }}</router-link>
       </p>
     </div>
   </div>

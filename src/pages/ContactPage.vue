@@ -1,11 +1,36 @@
 <script setup>
+import { computed } from 'vue'
 import PublicNav from '@/components/PublicNav.vue'
+import { i18n } from '@/stores/i18nStore'
 
 const creators = [
   { name: 'Kenji Bras', initials: 'KB' },
   { name: 'Casper Gutteling', initials: 'CG' },
   { name: 'Justin van Dam', initials: 'JD' },
 ]
+
+const text = computed(() => (i18n.language === 'nl'
+  ? {
+      contact: 'Contact',
+      title: 'Neem contact op',
+      lead: 'Vragen of feedback? Neem direct contact op.',
+      team: 'Team',
+      email: 'E-mail',
+      portfolio: 'Portfolio',
+      developer: 'Ontwikkelaar',
+      viewPortfolio: 'Bekijk ons portfolio',
+    }
+  : {
+      contact: 'Contact',
+      title: 'Get in touch',
+      lead: 'Questions or feedback? Reach out directly.',
+      team: 'Team',
+      email: 'Email',
+      portfolio: 'Portfolio',
+      developer: 'Developer',
+      viewPortfolio: 'View our portfolio',
+    }
+))
 </script>
 
 <template>
@@ -15,32 +40,32 @@ const creators = [
     <main class="contact-content">
 
       <header class="contact-header">
-        <div class="contact-label">Contact</div>
-        <h1>Get in touch</h1>
-        <p class="lead">Questions or feedback? Reach out directly.</p>
+        <div class="contact-label">{{ text.contact }}</div>
+        <h1>{{ text.title }}</h1>
+        <p class="lead">{{ text.lead }}</p>
       </header>
 
       <section class="section">
-        <h2 class="section-title">Team</h2>
+        <h2 class="section-title">{{ text.team }}</h2>
         <div class="creator-grid">
           <div class="creator-card" v-for="c in creators" :key="c.name">
             <div class="creator-initials">{{ c.initials }}</div>
             <div>
               <div class="creator-name">{{ c.name }}</div>
-              <div class="creator-role">Developer</div>
+              <div class="creator-role">{{ text.developer }}</div>
             </div>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h2 class="section-title">Email</h2>
+        <h2 class="section-title">{{ text.email }}</h2>
         <a href="mailto:hello@vecta.dev" class="contact-email">hello@vecta.dev</a>
       </section>
 
       <section class="section">
-        <h2 class="section-title">Portfolio</h2>
-        <a href="#" class="portfolio-link">View our portfolio</a>
+        <h2 class="section-title">{{ text.portfolio }}</h2>
+        <a href="#" class="portfolio-link">{{ text.viewPortfolio }}</a>
       </section>
 
     </main>

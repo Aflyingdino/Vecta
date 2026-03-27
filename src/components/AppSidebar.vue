@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { projects, activeProjectId } from '@/stores/projectStore'
 import { isLoggedIn, user, logout } from '@/stores/authStore'
 import { openAppSettings } from '@/stores/uiStore'
+import GlobalControls from '@/components/GlobalControls.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -48,10 +49,13 @@ const userInitials = computed(() => {
   <nav class="sidebar" :class="{ 'sidebar--collapsed': collapsed }">
     <!-- Logo -->
     <div class="sidebar-logo" :class="{ 'sidebar-logo--collapsed': collapsed }">
-      <router-link v-if="!collapsed" to="/" class="logo-link">
-        <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
-        <span class="logo-text">TaskPilot</span>
-      </router-link>
+      <div v-if="!collapsed" class="logo-row">
+        <router-link to="/" class="logo-link">
+          <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
+          <span class="logo-text">TaskPilot</span>
+        </router-link>
+        <GlobalControls />
+      </div>
       <button class="collapse-btn" @click="toggleCollapse" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" :d="collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'" />
@@ -161,6 +165,12 @@ const userInitials = computed(() => {
 .sidebar-logo--collapsed {
   justify-content: center;
   padding: 14px 0;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 .logo-link {
   display: flex;

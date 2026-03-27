@@ -1,11 +1,42 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchPublicProject } from '@/stores/projectStore'
+import { i18n } from '@/stores/i18nStore'
+import GlobalControls from '@/components/GlobalControls.vue'
 
 const route = useRoute()
 const project = ref(null)
 const loading = ref(true)
+
+const text = computed(() => (i18n.language === 'nl'
+  ? {
+      login: 'Inloggen',
+      signup: 'Gratis registreren',
+      notFound: 'Project niet gevonden',
+      invalidLink: 'Deze deellink is ongeldig of het project is weer privé.',
+      goHome: 'Ga naar home',
+      sharedProject: 'Gedeeld project',
+      readOnly: 'Alleen-lezen',
+      noTasks: 'Geen taken',
+      backlog: 'Backlog',
+    }
+  : {
+      login: 'Log in',
+      signup: 'Sign up free',
+      notFound: 'Project not found',
+      invalidLink: 'This share link is invalid or the project has been made private.',
+      goHome: 'Go home',
+      sharedProject: 'Shared project',
+      readOnly: 'Read-only',
+      noTasks: 'No tasks',
+      backlog: 'Backlog',
+    }
+))
+
+function formatShortDate(iso) {
+  return new Date(iso).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : 'en-GB', { day: '2-digit', month: 'short' })
+}
 
 onMounted(async () => {
   try {
@@ -18,23 +49,26 @@ onMounted(async () => {
 <template>
   <div class="public-board-page">
     <header class="pub-header">
-      <div class="pub-brand">
-        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="var(--color-accent)" />
-          <path d="M8 10h16M8 16h10M8 22h13" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
-        </svg>
-        <span>TaskPilot</span>
+      <div class="pub-left">
+        <div class="pub-brand">
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="var(--color-accent)" />
+            <path d="M8 10h16M8 16h10M8 22h13" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
+          </svg>
+          <span>TaskPilot</span>
+        </div>
+        <GlobalControls />
       </div>
       <nav class="pub-nav-links">
-        <router-link to="/login">Log in</router-link>
-        <router-link to="/register" class="btn-cta">Sign up free</router-link>
+        <router-link to="/login">{{ text.login }}</router-link>
+        <router-link to="/register" class="btn-cta">{{ text.signup }}</router-link>
       </nav>
     </header>
 
     <div v-if="!project" class="not-found">
-      <h2>Project not found</h2>
-      <p>This share link is invalid or the project has been made private.</p>
-      <router-link to="/">Go home</router-link>
+      <h2>{{ text.notFound }}</h2>
+      <p>{{ text.invalidLink }}</p>
+      <router-link to="/">{{ text.goHome }}</router-link>
     </div>
 
     <template v-else>
@@ -42,9 +76,9 @@ onMounted(async () => {
         <div class="board-meta__icon" :style="{ background: project.color }">{{ project.name[0] }}</div>
         <div>
           <h1 class="board-meta__name">{{ project.name }}</h1>
-          <p class="board-meta__desc">{{ project.description || 'Shared project' }}</p>
+          <p class="board-meta__desc">{{ project.description || text.sharedProject }}</p>
         </div>
-        <span class="readonly-badge">Read-only</span>
+        <span class="readonly-badge">{{ text.readOnly }}</span>
       </div>
 
       <div class="board-scroll">
@@ -59,17 +93,17 @@ onMounted(async () => {
                 <p class="pub-task__text">{{ task.text }}</p>
                 <div class="pub-task__meta" v-if="task.deadline || task.status !== 'not_started'">
                   <span v-if="task.deadline" class="pub-deadline">
-                    {{ new Date(task.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }}
+                    {{ formatShortDate(task.deadline) }}
                   </span>
                 </div>
               </div>
-              <div v-if="!group.tasks.length" class="col-empty">No tasks</div>
+              <div v-if="!group.tasks.length" class="col-empty">{{ text.noTasks }}</div>
             </div>
           </div>
 
           <div class="column" v-if="project.backlog.length">
             <div class="col-header">
-              <span class="col-name">Backlog</span>
+              <span class="col-name">{{ text.backlog }}</span>
               <span class="col-count">{{ project.backlog.length }}</span>
             </div>
             <div class="col-tasks">
@@ -101,6 +135,11 @@ onMounted(async () => {
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
+.pub-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .pub-brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
 .pub-nav-links { display: flex; align-items: center; gap: 12px; }
 .pub-nav-links a { font-size: 13px; color: var(--color-text-2); text-decoration: none; }
@@ -111,6 +150,20 @@ onMounted(async () => {
   background: var(--color-accent) !important;
   color: #fff !important;
   font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .pub-header {
+    padding: 8px 14px;
+    height: auto;
+    min-height: 56px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pub-nav-links {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 .not-found {
