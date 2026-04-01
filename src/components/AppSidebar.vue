@@ -49,8 +49,8 @@ const userInitials = computed(() => {
     <!-- Logo -->
     <div class="sidebar-logo" :class="{ 'sidebar-logo--collapsed': collapsed }">
       <router-link v-if="!collapsed" to="/" class="logo-link">
-        <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
-        <span class="logo-text">TaskPilot</span>
+        <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
+        <span class="logo-text">Vecta</span>
       </router-link>
       <button class="collapse-btn" @click="toggleCollapse" :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

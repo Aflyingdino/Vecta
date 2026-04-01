@@ -23,7 +23,7 @@ onMounted(async () => {
           <rect width="32" height="32" rx="8" fill="var(--color-accent)" />
           <path d="M8 10h16M8 16h10M8 22h13" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
         </svg>
-        <span>TaskPilot</span>
+        <span>Vecta</span>
       </div>
       <nav class="pub-nav-links">
         <router-link to="/login">Log in</router-link>

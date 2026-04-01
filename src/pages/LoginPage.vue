@@ -25,8 +25,8 @@ async function handleLogin() {
   <div class="auth-page">
     <div class="auth-card">
       <router-link to="/" class="auth-logo">
-        <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
-        <span>TaskPilot</span>
+        <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
+        <span>Vecta</span>
       </router-link>
       <h1 class="auth-title">Welcome back</h1>
       <p class="auth-sub">Log in to your account</p>

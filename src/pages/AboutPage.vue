@@ -23,18 +23,18 @@ const featureList = [
 
       <header class="about-header">
         <div class="about-label">About</div>
-        <h1>TaskPilot</h1>
+        <h1>Vecta</h1>
         <p class="lead">A project management tool built to help teams plan, track, and ship work without the overhead that makes most tools feel like more work than the work itself.</p>
       </header>
 
       <section class="about-section">
         <h2>Where it started</h2>
-        <p>TaskPilot started as a school project with a clear constraint: build something that actually works the way a team works. Not a demo, not a mockup. The goal was a real tool you could hand to a team and have them use on day one without a manual. That constraint drove every decision: keep the interface clean, keep the features purposeful, and cut anything that does not pull its weight.</p>
+        <p>Vecta started as a school project with a clear constraint: build something that actually works the way a team works. Not a demo, not a mockup. The goal was a real tool you could hand to a team and have them use on day one without a manual. That constraint drove every decision: keep the interface clean, keep the features purposeful, and cut anything that does not pull its weight.</p>
       </section>
 
       <section class="about-section">
         <h2>What it is</h2>
-        <p>At its core, TaskPilot is a kanban-based workspace. You create a project, set up groups that match your workflow, and fill them with task cards. Each task can carry a label, a priority level, a deadline, and a running comment thread. When a task needs attention, the team gets notified inside the app.</p>
+        <p>At its core, Vecta is a kanban-based workspace. You create a project, set up groups that match your workflow, and fill them with task cards. Each task can carry a label, a priority level, a deadline, and a running comment thread. When a task needs attention, the team gets notified inside the app.</p>
         <p class="para-spaced">Projects have member roles so the right people have the right access. Any board can also be shared as a read-only public link, so stakeholders can follow along without needing an account. Tasks that are not ready for the board live in the backlog until they are.</p>
       </section>
 

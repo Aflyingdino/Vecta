@@ -5,8 +5,8 @@ import { isLoggedIn } from '@/stores/authStore'
 <template>
   <header class="pub-nav">
     <router-link to="/" class="pub-brand">
-      <img src="/logo.png" alt="TaskPilot logo" width="26" height="26" />
-      <span>TaskPilot</span>
+      <img src="/logo.png" alt="Vecta logo" width="26" height="26" />
+      <span>Vecta</span>
     </router-link>
 
     <nav class="pub-links">

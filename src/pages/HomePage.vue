@@ -61,7 +61,7 @@ const steps = [
     <section class="hero">
       <h1 class="hero__title">Manage projects<br>without the noise</h1>
       <p class="hero__subtitle">
-        TaskPilot gives your team kanban boards, deadlines, labels, and comments in one focused workspace.
+        Vecta gives your team kanban boards, deadlines, labels, and comments in one focused workspace.
       </p>
       <div class="hero__cta">
         <router-link to="/register" class="btn btn-primary btn-lg">Get started</router-link>
@@ -112,7 +112,7 @@ const steps = [
 
     <!-- Footer -->
     <footer class="home-footer">
-      <p>2026 TaskPilot &nbsp;&middot;&nbsp; <router-link to="/about">About</router-link> &nbsp;&middot;&nbsp; <router-link to="/contact">Contact</router-link></p>
+      <p>2026 Vecta &nbsp;&middot;&nbsp; <router-link to="/about">About</router-link> &nbsp;&middot;&nbsp; <router-link to="/contact">Contact</router-link></p>
     </footer>
   </div>
 </template>
