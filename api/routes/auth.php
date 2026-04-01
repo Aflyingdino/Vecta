@@ -43,6 +43,8 @@ function handleRegister(): never
         'id'    => $uid,
         'name'  => $name,
         'email' => $email,
+        'preferredTheme' => 'light',
+        'preferredLanguage' => 'nl',
         'csrfToken' => csrfToken(),
     ], 201);
 }
@@ -57,7 +59,7 @@ function handleLogin(): never
 
     enforceRateLimit('login-email:' . sha1($email), RATE_LIMIT_AUTH, RATE_LIMIT_AUTH_WINDOW);
 
-    $stmt = db()->prepare('SELECT user_id, name, email, password_hash FROM users WHERE email = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, password_hash, preferred_theme, preferred_language FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -83,6 +85,8 @@ function handleLogin(): never
         'id'    => (int) $user['user_id'],
         'name'  => $user['name'],
         'email' => $user['email'],
+        'preferredTheme' => $user['preferred_theme'] ?: 'light',
+        'preferredLanguage' => $user['preferred_language'] ?: 'nl',
         'csrfToken' => csrfToken(),
     ]);
 }
@@ -100,7 +104,7 @@ function handleMe(): never
     $uid = currentUserId();
     if (!$uid) jsonError('Not authenticated', 401);
 
-    $stmt = db()->prepare('SELECT user_id, name, email, created_at FROM users WHERE user_id = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, created_at, preferred_theme, preferred_language FROM users WHERE user_id = ?');
     $stmt->execute([$uid]);
     $user = $stmt->fetch();
 
@@ -115,5 +119,26 @@ function handleMe(): never
         'name'      => $user['name'],
         'email'     => $user['email'],
         'createdAt' => $user['created_at'],
+        'preferredTheme' => $user['preferred_theme'] ?: 'light',
+        'preferredLanguage' => $user['preferred_language'] ?: 'nl',
+    ]);
+}
+
+function handleUpdatePreferences(): never
+{
+    $uid = currentUserId();
+    if (!$uid) jsonError('Not authenticated', 401);
+
+    $data = jsonBody();
+
+    $theme = requireEnumValue($data['theme'] ?? null, ['light', 'dark'], 'theme');
+    $language = requireEnumValue($data['language'] ?? null, ['nl', 'en'], 'language');
+
+    $stmt = db()->prepare('UPDATE users SET preferred_theme = ?, preferred_language = ? WHERE user_id = ?');
+    $stmt->execute([$theme, $language, $uid]);
+
+    jsonResponse([
+        'preferredTheme' => $theme,
+        'preferredLanguage' => $language,
     ]);
 }

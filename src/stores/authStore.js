@@ -1,5 +1,6 @@
 import { reactive, computed, readonly } from 'vue'
 import { api } from '@/utils/api'
+import { applyPreferencesFromAccount } from '@/stores/preferencesStore'
 
 /* ─────────────────────────────────────────────
    Auth Store — session-based via PHP backend
@@ -27,6 +28,7 @@ export const authError = computed(() => _state.error)
 export async function checkSession() {
   try {
     const data = await api.get('/auth/me')
+    applyPreferencesFromAccount(data)
     Object.assign(_state, {
       id: data.id,
       name: data.name,
@@ -45,6 +47,7 @@ export async function login(email, password) {
   _state.error = null
   try {
     const data = await api.post('/auth/login', { email, password })
+    applyPreferencesFromAccount(data)
     Object.assign(_state, {
       id: data.id,
       name: data.name,
@@ -65,6 +68,7 @@ export async function register({ name, email, password }) {
   _state.error = null
   try {
     const data = await api.post('/auth/register', { name, email, password })
+    applyPreferencesFromAccount(data)
     Object.assign(_state, {
       id: data.id,
       name: data.name,
@@ -82,6 +86,7 @@ export async function register({ name, email, password }) {
 
 export async function logout() {
   try { await api.post('/auth/logout') } catch { /* ignore */ }
+  applyPreferencesFromAccount({ preferredTheme: 'light', preferredLanguage: 'nl' })
   Object.assign(_state, {
     id: null, name: '', email: '', avatar: null,
     isLoggedIn: false, error: null,
