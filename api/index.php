@@ -56,6 +56,7 @@ function defineRoutes(): array
         route('POST', '/auth/login', static fn() => handleLogin()),
         route('POST', '/auth/logout', static fn() => handleLogout()),
         route('GET', '/auth/me', static fn() => handleMe()),
+        route('PATCH', '/auth/preferences', static fn() => handleUpdatePreferences()),
 
         // Projects
         route('GET', '/projects', static fn() => handleListProjects()),
