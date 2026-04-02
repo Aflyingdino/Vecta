@@ -43,7 +43,7 @@ const overdueTasks = computed(() => {
 const recentTasks = computed(() =>
   [...allTasks.value]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 8)
+    .slice(0, 5)
 )
 
 // ── Activity feed ──────────────────────────────────────────────────
@@ -336,10 +336,13 @@ function goToActivityTask(entry) {
 
           <!-- Recent tasks -->
           <section class="dash-section">
-            <h2 class="section-title">
-              <span class="dot dot--blue"></span>
-              Recent tasks
-            </h2>
+            <div class="section-header">
+              <h2 class="section-title">
+                <span class="dot dot--blue"></span>
+                Recent tasks
+              </h2>
+              <router-link v-if="allTasks.length > 5" to="/activity" class="view-all-link">View all</router-link>
+            </div>
             <div class="task-list" v-if="recentTasks.length">
               <div
                 v-for="t in recentTasks"
@@ -700,6 +703,27 @@ function goToActivityTask(entry) {
   font-weight: 700;
   color: var(--color-text-1);
   border-bottom: 1px solid var(--color-border-sub);
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--color-border-sub);
+}
+.view-all-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.view-all-link:hover {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
 }
 .dot {
   width: 8px;

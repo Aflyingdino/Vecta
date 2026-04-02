@@ -10,12 +10,14 @@ const RegisterPage   = () => import('@/pages/RegisterPage.vue')
 const ProjectsPage   = () => import('@/pages/ProjectsPage.vue')
 const BoardPage      = () => import('@/pages/BoardPage.vue')
 const DashboardPage  = () => import('@/pages/DashboardPage.vue')
+const ActivityPage   = () => import('@/pages/ActivityPage.vue')
 const CalendarPage   = () => import('@/pages/CalendarPage.vue')
 const PublicBoardPage = () => import('@/pages/PublicBoardPage.vue')
+const ProjectDashboardPage = () => import('@/pages/ProjectDashboardPage.vue')
 
 const routes = [
   /* ── Public ── */
-  { path: '/',         name: 'home',     component: HomePage },
+  { path: '/',         redirect: '/calendar' }, // Redirect to calendar for development
   { path: '/about',    name: 'about',    component: AboutPage },
   { path: '/contact',  name: 'contact',  component: ContactPage },
   { path: '/login',    name: 'login',    component: LoginPage },
@@ -37,9 +39,21 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/projects/:id/dashboard',
+    name: 'project-dashboard',
+    component: ProjectDashboardPage,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/activity',
+    name: 'activity',
+    component: ActivityPage,
     meta: { requiresAuth: true },
   },
   {

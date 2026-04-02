@@ -100,14 +100,21 @@ function toggleProject(id) {
 
 // All projects with their unscheduled tasks
 const sidebarProjects = computed(() => {
-  return projects.value.map(p => ({
-    ...p,
-    allTasks: [
-      ...p.backlog,
-      ...p.groups.flatMap(g => g.tasks)
-    ]
-  }))
+  return projects.value
+    .map(p => ({
+      ...p,
+      allTasks: [
+        ...p.backlog,
+        ...p.groups.flatMap(g => g.tasks)
+      ]
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name)) // Group by sorting projects alphabetically
 })
+
+// Check if task is overdue
+function isTaskOverdue(task) {
+  return task.deadline && task.status !== 'done' && new Date(task.deadline) < new Date()
+}
 
 /* ═══════════════════════════════════════════════
    DRAG FROM SIDEBAR
@@ -116,6 +123,11 @@ const sidebarProjects = computed(() => {
 const dragGrabOffsetMin = ref(0)
 
 function onTaskDragStart(event, task, project) {
+  // Prevent dragging overdue tasks
+  if (isTaskOverdue(task)) {
+    event.preventDefault()
+    return
+  }
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('taskId', String(task.id))
   event.dataTransfer.setData('projectId', String(project.id))
@@ -126,6 +138,11 @@ function onTaskDragStart(event, task, project) {
    DRAG EXISTING BLOCK (move)
 ═══════════════════════════════════════════════ */
 function onBlockDragStart(event, task) {
+  // Prevent dragging overdue tasks
+  if (isTaskOverdue(task)) {
+    event.preventDefault()
+    return
+  }
   event.stopPropagation()
   isDraggingBlock.value = true
   event.dataTransfer.effectAllowed = 'move'
@@ -450,7 +467,10 @@ function deadlineTasksForDay(date) {
                 v-for="t in p.allTasks"
                 :key="t.id"
                 class="sb-task-item"
-                :class="{ 'sb-task-item--scheduled': !!t.calendarStart }"
+                :class="{ 
+                  'sb-task-item--scheduled': !!t.calendarStart,
+                  'sb-task-item--overdue': isTaskOverdue(t)
+                }"
                 draggable="true"
                 @dragstart="onTaskDragStart($event, t, p)"
               >
@@ -601,6 +621,7 @@ function deadlineTasksForDay(date) {
                   v-for="task in tasksForDay(dayIndex)"
                   :key="task.id"
                   class="task-block"
+                  :class="{ 'task-block--overdue': isTaskOverdue(task) }"
                   draggable="true"
                   :style="{ ...taskStyle(task), '--tc': task.calendarColor || task._projectColor }"
                   @dragstart="onBlockDragStart($event, task)"
@@ -783,6 +804,13 @@ function deadlineTasksForDay(date) {
 .sb-task-item:hover { background: var(--color-surface-2); }
 .sb-task-item:active { cursor: grabbing; }
 .sb-task-item--scheduled { opacity: 0.55; }
+.sb-task-item--overdue {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.sb-task-item--overdue:hover {
+  background: transparent;
+}
 .sb-task-drag { color: var(--color-text-3); flex-shrink: 0; }
 .sb-task-text {
   font-size: 12px;
@@ -1035,6 +1063,11 @@ function deadlineTasksForDay(date) {
   transition: filter 0.12s;
 }
 .task-block:hover { filter: brightness(1.15); }
+.task-block--overdue {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.task-block--overdue:hover { filter: none; }
 /* clip only the inner content, not the palette which escapes to the side */
 .task-block > .resize-handle,
 .task-block > .resize-handle--top {
