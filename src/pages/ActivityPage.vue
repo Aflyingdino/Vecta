@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout.vue'
 import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
-import { STATUS_META } from '@/utils/constants'
+import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
 
 const router = useRouter()
 
@@ -35,7 +35,7 @@ const filteredTasks = computed(() => {
 
   // Filter by status
   if (activeFilter.value === 'started') {
-    result = result.filter(t => t.status === 'started')
+    result = result.filter(t => isInProgressStatus(t.status))
   } else if (activeFilter.value === 'overdue') {
     const now = new Date()
     result = result.filter(t => t.deadline && t.status !== 'done' && new Date(t.deadline) < now)
@@ -60,7 +60,7 @@ const stats = computed(() => {
   const all = allTasks.value
   return {
     total: all.length,
-    started: all.filter(t => t.status === 'started').length,
+    started: all.filter(t => isInProgressStatus(t.status)).length,
     overdue: all.filter(t => {
       const now = new Date()
       return t.deadline && t.status !== 'done' && new Date(t.deadline) < now
@@ -71,7 +71,7 @@ const stats = computed(() => {
 
 function formatDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function goToTask(task) {

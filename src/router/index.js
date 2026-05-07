@@ -17,7 +17,8 @@ const ProjectDashboardPage = () => import('@/pages/ProjectDashboardPage.vue')
 
 const routes = [
   /* ── Public ── */
-  { path: '/',         redirect: '/calendar' }, // Redirect to calendar for development
+  { path: '/',         redirect: '/home' },
+  { path: '/home',     name: 'home',     component: HomePage },
   { path: '/about',    name: 'about',    component: AboutPage },
   { path: '/contact',  name: 'contact',  component: ContactPage },
   { path: '/login',    name: 'login',    component: LoginPage },

@@ -7,6 +7,7 @@ import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds, toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
 import { readJson, writeJson } from '@/utils/safeStorage'
+import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
 
 
 const router = useRouter()
@@ -27,9 +28,8 @@ const allTasks = computed(() => {
 const stats = computed(() => {
   const all = allTasks.value
   return {
-    total: all.length,
     notStarted: all.filter(t => t.status === 'not_started').length,
-    started: all.filter(t => t.status === 'started').length,
+    started: all.filter(t => isInProgressStatus(t.status)).length,
     readyForTest: all.filter(t => t.status === 'ready_for_test').length,
     done: all.filter(t => t.status === 'done').length,
   }
@@ -42,7 +42,7 @@ const overdueTasks = computed(() => {
 
 const recentTasks = computed(() =>
   [...allTasks.value]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
     .slice(0, 5)
 )
 
@@ -59,7 +59,7 @@ const deadlineWarnings = computed(() => {
       warnings.push({
         id: `warn-${t.id}-overdue`,
         type: 'deadline_expired',
-        message: `Deadline on "${t.text}" has passed`,
+        message: `Deadline van "${t.text}" is verstreken`,
         projectName: t.projectName,
         projectColor: t.projectColor,
         createdAt: t.deadline,
@@ -68,7 +68,7 @@ const deadlineWarnings = computed(() => {
       warnings.push({
         id: `warn-${t.id}-soon`,
         type: 'deadline_soon',
-        message: `Deadline on "${t.text}" expires within 24 hours`,
+        message: `Deadline van "${t.text}" verloopt binnen 24 uur`,
         projectName: t.projectName,
         projectColor: t.projectColor,
         createdAt: t.deadline,
@@ -115,25 +115,18 @@ function formatRelative(iso) {
   if (!iso) return ''
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1) return 'zojuist'
+  if (m < 60) return `${m}m geleden`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return `${h}u geleden`
   const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-}
-
-const STATUS_META = {
-  not_started:    { label: 'Not started', color: '#52525f' },
-  started:        { label: 'Started',     color: '#5b5bd6' },
-  ready_for_test: { label: 'Ready for test', color: '#f5c842' },
-  done:           { label: 'Done',         color: '#46a758' },
+  if (d < 7) return `${d}d geleden`
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short' })
 }
 
 function formatDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function goToProject(task) {
@@ -142,19 +135,18 @@ function goToProject(task) {
 }
 
 /* ── Clickable stat filter ── */
-const statFilter = ref(null) // null | 'total' | 'started' | 'overdue' | 'done'
+const statFilter = ref(null) // null | 'started' | 'overdue' | 'done'
 
 const filteredStatTasks = computed(() => {
   if (!statFilter.value) return []
-  if (statFilter.value === 'total') return allTasks.value
-  if (statFilter.value === 'started') return allTasks.value.filter(t => t.status === 'started')
+  if (statFilter.value === 'started') return allTasks.value.filter(t => isInProgressStatus(t.status))
   if (statFilter.value === 'overdue') return overdueTasks.value
   if (statFilter.value === 'done') return allTasks.value.filter(t => t.status === 'done')
   return []
 })
 
 const statFilterLabel = computed(() => ({
-  total: 'All tasks', started: 'In progress', overdue: 'Overdue', done: 'Completed'
+  started: 'Bezig', overdue: 'Te laat', done: 'Klaar'
 })[statFilter.value])
 
 function toggleStatFilter(key) {
@@ -188,7 +180,7 @@ function closeActivityDetail() { activityDetail.value = null }
 
 function formatFull(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleString(APP_LOCALE, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 // ── Activity: shift-select ──
@@ -240,21 +232,17 @@ function goToActivityTask(entry) {
 
       <!-- Stats row (always visible) -->
       <div class="stats-grid">
-        <button class="stat-card" :class="{ 'stat-card--active': statFilter === 'total' }" @click="toggleStatFilter('total')">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">Total tasks</div>
-        </button>
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
           <div class="stat-value">{{ stats.started }}</div>
-          <div class="stat-label">In progress</div>
+          <div class="stat-label">Bezig</div>
         </button>
         <button class="stat-card stat-card--warn" :class="{ 'stat-card--active': statFilter === 'overdue' }" @click="toggleStatFilter('overdue')">
           <div class="stat-value">{{ overdueTasks.length }}</div>
-          <div class="stat-label">Overdue</div>
+          <div class="stat-label">Te laat</div>
         </button>
         <button class="stat-card stat-card--done" :class="{ 'stat-card--active': statFilter === 'done' }" @click="toggleStatFilter('done')">
           <div class="stat-value">{{ stats.done }}</div>
-          <div class="stat-label">Completed</div>
+          <div class="stat-label">Klaar</div>
         </button>
       </div>
 
@@ -290,13 +278,13 @@ function goToActivityTask(entry) {
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'overview' }"
           @click="activeTab = 'overview'"
-        >Overview</button>
+        >Overzicht</button>
         <button
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'projects' }"
           @click="activeTab = 'projects'"
         >
-          Projects
+          Projecten
           <span class="tab-badge" v-if="projects.length">{{ projects.length }}</span>
         </button>
         <button
@@ -304,7 +292,7 @@ function goToActivityTask(entry) {
           :class="{ 'dash-tab--active': activeTab === 'activity' }"
           @click="activeTab = 'activity'"
         >
-          Activity
+          Activiteit
           <span class="tab-badge tab-badge--warn" v-if="deadlineWarnings.length">{{ deadlineWarnings.length }}</span>
         </button>
       </div>
@@ -339,27 +327,29 @@ function goToActivityTask(entry) {
             <div class="section-header">
               <h2 class="section-title">
                 <span class="dot dot--blue"></span>
-                Recent tasks
+                Meest recente taken
               </h2>
-              <router-link v-if="allTasks.length > 5" to="/activity" class="view-all-link">View all</router-link>
             </div>
-            <div class="task-list" v-if="recentTasks.length">
-              <div
-                v-for="t in recentTasks"
-                :key="t.id + '-' + t.projectId"
-                class="task-row"
-                @click="goToProject(t)"
-              >
-                <div class="task-row__info">
-                  <span class="task-row__text">{{ t.text }}</span>
-                  <span class="task-row__project" :style="{ color: t.projectColor }">{{ t.projectName }}</span>
+            <template v-if="recentTasks.length">
+              <div class="task-list">
+                <div
+                  v-for="t in recentTasks"
+                  :key="t.id + '-' + t.projectId"
+                  class="task-row"
+                  @click="goToProject(t)"
+                >
+                  <div class="task-row__info">
+                    <span class="task-row__text">{{ t.text }}</span>
+                    <span class="task-row__project" :style="{ color: t.projectColor }">{{ t.projectName }}</span>
+                  </div>
+                  <span
+                    class="status-chip"
+                    :style="{ '--sc': STATUS_META[t.status]?.color }"
+                  >{{ STATUS_META[t.status]?.label }}</span>
                 </div>
-                <span
-                  class="status-chip"
-                  :style="{ '--sc': STATUS_META[t.status]?.color }"
-                >{{ STATUS_META[t.status]?.label }}</span>
               </div>
-            </div>
+              <router-link to="/activity" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
+            </template>
             <div v-else class="empty-section">
               <p>No tasks yet. <router-link to="/projects">Create a project</router-link> to get started.</p>
             </div>
@@ -724,6 +714,25 @@ function goToActivityTask(entry) {
 }
 .view-all-link:hover {
   background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+.recent-tasks-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 14px 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-surface-2);
+  transition: background 0.1s, border-color 0.1s;
+}
+.recent-tasks-link:hover {
+  background: var(--color-surface-3);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
 }
 .dot {
   width: 8px;

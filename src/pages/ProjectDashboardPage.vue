@@ -6,7 +6,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { projects, setActiveProject, activeProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
-import { STATUS_META } from '@/utils/constants'
+import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,9 +28,8 @@ const projectTasks = computed(() => {
 const stats = computed(() => {
   const all = projectTasks.value
   return {
-    total: all.length,
     notStarted: all.filter(t => t.status === 'not_started').length,
-    started: all.filter(t => t.status === 'started').length,
+    started: all.filter(t => isInProgressStatus(t.status)).length,
     readyForTest: all.filter(t => t.status === 'ready_for_test').length,
     done: all.filter(t => t.status === 'done').length,
   }
@@ -43,7 +42,7 @@ const overdueTasks = computed(() => {
 
 const recentTasks = computed(() =>
   [...projectTasks.value]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
     .slice(0, 5)
 )
 
@@ -52,15 +51,14 @@ const statFilter = ref(null)
 
 const filteredStatTasks = computed(() => {
   if (!statFilter.value) return []
-  if (statFilter.value === 'total') return projectTasks.value
-  if (statFilter.value === 'started') return projectTasks.value.filter(t => t.status === 'started')
+  if (statFilter.value === 'started') return projectTasks.value.filter(t => isInProgressStatus(t.status))
   if (statFilter.value === 'overdue') return overdueTasks.value
   if (statFilter.value === 'done') return projectTasks.value.filter(t => t.status === 'done')
   return []
 })
 
 const statFilterLabel = computed(() => ({
-  total: 'All tasks', started: 'In progress', overdue: 'Overdue', done: 'Completed'
+  started: 'In progress', overdue: 'Overdue', done: 'Completed'
 })[statFilter.value])
 
 function toggleStatFilter(key) {
@@ -69,7 +67,7 @@ function toggleStatFilter(key) {
 
 function formatDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function openTask(taskId) {
@@ -95,10 +93,6 @@ function openTask(taskId) {
 
       <!-- Stats row -->
       <div class="stats-grid">
-        <button class="stat-card" :class="{ 'stat-card--active': statFilter === 'total' }" @click="toggleStatFilter('total')">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">Total tasks</div>
-        </button>
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
           <div class="stat-value">{{ stats.started }}</div>
           <div class="stat-label">In progress</div>
@@ -163,26 +157,31 @@ function openTask(taskId) {
 
         <!-- Recent tasks -->
         <section class="dash-section">
-          <h2 class="section-title">
-            <span class="dot dot--blue"></span>
-            Recent tasks
-          </h2>
-          <div class="task-list" v-if="recentTasks.length">
-            <div
-              v-for="t in recentTasks"
-              :key="t.id"
-              class="task-row"
-              @click="openTask(t.id)"
-            >
-              <div class="task-row__info">
-                <span class="task-row__text">{{ t.text }}</span>
-              </div>
-              <span
-                class="status-chip"
-                :style="{ '--sc': STATUS_META[t.status]?.color }"
-              >{{ STATUS_META[t.status]?.label }}</span>
-            </div>
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="dot dot--blue"></span>
+              Meest recente taken
+            </h2>
           </div>
+          <template v-if="recentTasks.length">
+            <div class="task-list">
+              <div
+                v-for="t in recentTasks"
+                :key="t.id"
+                class="task-row"
+                @click="openTask(t.id)"
+              >
+                <div class="task-row__info">
+                  <span class="task-row__text">{{ t.text }}</span>
+                </div>
+                <span
+                  class="status-chip"
+                  :style="{ '--sc': STATUS_META[t.status]?.color }"
+                >{{ STATUS_META[t.status]?.label }}</span>
+              </div>
+            </div>
+            <router-link :to="{ name: 'activity' }" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
+          </template>
           <div v-else class="empty-section">
             <p>No tasks yet in this project.</p>
           </div>
@@ -374,6 +373,39 @@ function openTask(taskId) {
   font-weight: 700;
   color: var(--color-text-1);
   border-bottom: 1px solid var(--color-border-sub);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-header .section-title {
+  flex: 1;
+  border-bottom: 1px solid var(--color-border-sub);
+}
+
+.recent-tasks-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 14px 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-surface-2);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.recent-tasks-link:hover {
+  background: var(--color-surface-3);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
 }
 
 .dot {

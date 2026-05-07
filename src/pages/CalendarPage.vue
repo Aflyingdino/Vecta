@@ -5,7 +5,7 @@ import { projects, activeProject, setActiveProject, scheduleTask, unscheduleTask
 import { openTaskDetail } from '@/stores/uiStore'
 import { updateTask } from '@/stores/boardStore'
 import { formatTime } from '@/utils/dates'
-import { PRESET_COLORS } from '@/utils/constants'
+import { APP_LOCALE, PRESET_COLORS } from '@/utils/constants'
 
 /* ═══════════════════════════════════════════════
    VIEW MODE
@@ -21,7 +21,7 @@ const isDraggingBlock = ref(false)
 const lastDragEndMs = ref(0)
 const activeTintTaskId = ref(null)
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEK_DAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 
 // Current week: Monday-based
 const today = new Date()
@@ -63,7 +63,7 @@ const weekDays = computed(() => {
 const weekLabel = computed(() => {
   const s = weekDays.value[0]
   const e = weekDays.value[6]
-  const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const fmt = d => d.toLocaleDateString(APP_LOCALE, { day: 'numeric', month: 'short' })
   return `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`
 })
 
@@ -94,21 +94,59 @@ function taskEndTimeLabel(task) {
    SIDEBAR — PROJECTS & TASKS
 ═══════════════════════════════════════════════ */
 const sidebarExpanded = ref({}) // projectId -> boolean
+const projectSort = ref('name_asc')
+const taskSort = ref('recent_desc')
+
 function toggleProject(id) {
   sidebarExpanded.value[id] = !sidebarExpanded.value[id]
 }
 
+function sortTasks(tasks) {
+  const list = [...tasks]
+  if (taskSort.value === 'recent_desc') {
+    return list.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+  }
+  if (taskSort.value === 'deadline_asc') {
+    return list.sort((a, b) => {
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      return new Date(a.deadline) - new Date(b.deadline)
+    })
+  }
+  if (taskSort.value === 'status') {
+    const rank = { not_started: 0, started: 1, ready_for_test: 1, done: 2 }
+    return list.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9))
+  }
+  return list.sort((a, b) => a.text.localeCompare(b.text, APP_LOCALE))
+}
+
+function sortProjectsList(items) {
+  const list = [...items]
+  if (projectSort.value === 'tasks_desc') {
+    return list.sort((a, b) => b.allTasks.length - a.allTasks.length)
+  }
+  if (projectSort.value === 'recent_desc') {
+    return list.sort((a, b) => {
+      const aLatest = Math.max(...a.allTasks.map(t => new Date(t.updatedAt || t.createdAt || 0).getTime()), 0)
+      const bLatest = Math.max(...b.allTasks.map(t => new Date(t.updatedAt || t.createdAt || 0).getTime()), 0)
+      return bLatest - aLatest
+    })
+  }
+  return list.sort((a, b) => a.name.localeCompare(b.name, APP_LOCALE))
+}
+
 // All projects with their unscheduled tasks
 const sidebarProjects = computed(() => {
-  return projects.value
+  const mapped = projects.value
     .map(p => ({
       ...p,
-      allTasks: [
+      allTasks: sortTasks([
         ...p.backlog,
         ...p.groups.flatMap(g => g.tasks)
-      ]
+      ])
     }))
-    .sort((a, b) => a.name.localeCompare(b.name)) // Group by sorting projects alphabetically
+  return sortProjectsList(mapped)
 })
 
 // Check if task is overdue
@@ -200,6 +238,15 @@ function tasksOnDay(dayDate, excludeTaskId) {
 
 const SNAP_THRESHOLD_MIN = 30 // gap smaller than this snaps to neighbour
 
+function isBeyondDeadline(task, dayDate, minute) {
+  if (!task?.deadline) return false
+  const dropDate = new Date(dayDate)
+  dropDate.setHours(Math.floor(minute / 60), minute % 60, 0, 0)
+  const deadlineEnd = new Date(task.deadline)
+  deadlineEnd.setHours(23, 59, 59, 999)
+  return dropDate > deadlineEnd
+}
+
 function onDrop(event, dayDate) {
   event.preventDefault()
   dragOverCell.value = null
@@ -212,6 +259,10 @@ function onDrop(event, dayDate) {
   const task = p ? [...p.backlog, ...p.groups.flatMap(g => g.tasks)].find(t => t.id === taskId) : null
   const duration = task?.calendarDuration ?? 60
   const others = tasksOnDay(dayDate, taskId)
+  if (isBeyondDeadline(task, dayDate, minute)) {
+    dragGrabOffsetMin.value = 0
+    return
+  }
 
   // ─ Snap start to adjacent task's end (gap < threshold)
   for (const o of others) {
@@ -234,7 +285,7 @@ function onDrop(event, dayDate) {
   const hasCollision = others.some(
     o => minute < o.endMin && (minute + snappedDuration) > o.startMin
   )
-  if (hasCollision) {
+  if (hasCollision || isBeyondDeadline(task, dayDate, minute)) {
     dragGrabOffsetMin.value = 0
     return // leave task at its original position
   }
@@ -381,8 +432,8 @@ function startTopResize(event, task) {
 /* ═══════════════════════════════════════════════
    DEADLINE VIEW (kept as toggle)
 ═══════════════════════════════════════════════ */
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const MONTHS = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December']
+const DAYS_SHORT = ['Zo','Ma','Di','Wo','Do','Vr','Za']
 const currentYear  = ref(today.getFullYear())
 const currentMonth = ref(today.getMonth())
 
@@ -438,7 +489,20 @@ function deadlineTasksForDay(date) {
       <!-- ── SIDEBAR ── -->
       <aside class="cal-sidebar">
         <div class="sidebar-head">
-          <span class="sidebar-title">Projects</span>
+          <span class="sidebar-title">Projecten</span>
+          <div class="sidebar-sort-row">
+            <select v-model="projectSort" class="sidebar-sort-select" aria-label="Sorteer projecten">
+              <option value="name_asc">Projecten: Naam</option>
+              <option value="tasks_desc">Projecten: Aantal taken</option>
+              <option value="recent_desc">Projecten: Recent actief</option>
+            </select>
+            <select v-model="taskSort" class="sidebar-sort-select" aria-label="Sorteer taken">
+              <option value="recent_desc">Taken: Recent gewijzigd</option>
+              <option value="deadline_asc">Taken: Deadline eerst</option>
+              <option value="status">Taken: Status</option>
+              <option value="name_asc">Taken: Naam</option>
+            </select>
+          </div>
         </div>
         <div class="sidebar-body">
           <div
@@ -462,7 +526,7 @@ function deadlineTasksForDay(date) {
               <div
                 v-if="p.allTasks.length === 0"
                 class="sb-task-empty"
-              >No tasks</div>
+              >Geen taken</div>
               <div
                 v-for="t in p.allTasks"
                 :key="t.id"
@@ -499,7 +563,7 @@ function deadlineTasksForDay(date) {
                 class="view-btn"
                 :class="{ 'view-btn--active': viewMode === 'schedule' }"
                 @click="viewMode = 'schedule'"
-              >Schedule</button>
+              >Planning</button>
               <button
                 class="view-btn"
                 :class="{ 'view-btn--active': viewMode === 'deadline' }"
@@ -521,7 +585,7 @@ function deadlineTasksForDay(date) {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
-            <button v-if="!isCurrentWeek" class="today-btn" @click="goThisWeek">Go to current week</button>
+            <button v-if="!isCurrentWeek" class="today-btn" @click="goThisWeek">Naar deze week</button>
           </div>
 
           <!-- Deadline nav -->
@@ -537,7 +601,7 @@ function deadlineTasksForDay(date) {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
-            <button v-if="!isCurrentMonth" class="today-btn" @click="goThisMonth">Go to current month</button>
+            <button v-if="!isCurrentMonth" class="today-btn" @click="goThisMonth">Naar deze maand</button>
           </div>
 
           <!-- Zoom (only schedule) -->
@@ -747,6 +811,26 @@ function deadlineTasksForDay(date) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-3);
+}
+.sidebar-sort-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sidebar-sort-select {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 5px 8px;
+}
+.sidebar-sort-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
 }
 .sidebar-body {
   flex: 1;

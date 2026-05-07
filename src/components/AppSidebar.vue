@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { projects, activeProjectId } from '@/stores/projectStore'
 import { isLoggedIn, user, logout } from '@/stores/authStore'
 import { readString, writeString } from '@/utils/safeStorage'
+import { openSettings } from '@/stores/uiStore'
 
 const router = useRouter()
 const route = useRoute()
@@ -21,11 +22,25 @@ const currentProjectId = computed(() =>
 
 const navLinks = [
   { name: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { name: 'projects',  label: 'Projects',  icon: 'grid' },
-  { name: 'calendar',  label: 'Calendar',  icon: 'calendar' },
+  { name: 'projects',  label: 'Projecten', icon: 'grid' },
+  { name: 'calendar',  label: 'Agenda',    icon: 'calendar' },
 ]
 
+function navTarget(link) {
+  if (link.name !== 'dashboard') return { name: link.name }
+  if (activeProjectId.value) {
+    return { name: 'project-dashboard', params: { id: activeProjectId.value } }
+  }
+  if (currentProjectId.value) {
+    return { name: 'project-dashboard', params: { id: currentProjectId.value } }
+  }
+  return { name: 'dashboard' }
+}
+
 function isActive(name) {
+  if (name === 'dashboard') {
+    return route.name === 'dashboard' || route.name === 'project-dashboard'
+  }
   return route.name === name
 }
 
@@ -65,7 +80,7 @@ const userInitials = computed(() => {
       <router-link
         v-for="link in navLinks"
         :key="link.name"
-        :to="{ name: link.name }"
+        :to="navTarget(link)"
         class="nav-item"
         :class="{ 'nav-item--active': isActive(link.name) }"
         :title="collapsed ? link.label : ''"
