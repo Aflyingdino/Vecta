@@ -121,4 +121,5 @@ jobs:
           fi
 
           git commit -m "Production build from main (${GITHUB_SHA})"
-          git push --force-with-lease origin HEAD:production
+          # Use GITHUB_TOKEN via http.extraheader to ensure authenticated push from Actions
+          git -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" push --force-with-lease origin HEAD:production
