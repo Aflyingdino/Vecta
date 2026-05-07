@@ -144,24 +144,53 @@ function triggerUpload() {
   fileInput.value?.click()
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
   const files = Array.from(event.target.files || [])
-  if (!files.length || !task.value) return
-  const existing = task.value.attachments ?? []
-  const added = files.map(file => ({
-    id: Date.now() + Math.random(),
-    filename: file.name,
-    url: URL.createObjectURL(file),
-    mime_type: file.type,
-    size_bytes: file.size,
-    uploaded_at: new Date().toISOString(),
-  }))
-  updateTask(task.value.id, { attachments: [...existing, ...added] })
-  event.target.value = ''
+  if (!files.length) return
+  
+  if (!task.value) {
+    console.error('Task not found')
+    return
+  }
+  
+  try {
+    const existing = task.value.attachments ?? []
+    const added = files.map(file => {
+      const objectUrl = URL.createObjectURL(file)
+      // Track URL for cleanup
+      task.value._pendingObjectUrls = task.value._pendingObjectUrls || []
+      task.value._pendingObjectUrls.push(objectUrl)
+      return {
+        id: Date.now() + Math.random(),
+        filename: file.name,
+        url: objectUrl,
+        mime_type: file.type,
+        size_bytes: file.size,
+        uploaded_at: new Date().toISOString(),
+      }
+    })
+    
+    await updateTask(task.value.id, { attachments: [...existing, ...added] })
+    event.target.value = ''
+  } catch (err) {
+    console.error('Failed to upload files:', err)
+    // Revoke any created object URLs on error
+    if (task.value._pendingObjectUrls) {
+      for (const url of task.value._pendingObjectUrls) {
+        URL.revokeObjectURL(url)
+      }
+      task.value._pendingObjectUrls = []
+    }
+  }
 }
 
 function removeAttachment(attachId) {
   if (!task.value) return
+  const attachment = (task.value.attachments ?? []).find(a => a.id === attachId)
+  // Revoke object URLs to free memory
+  if (attachment?.url?.startsWith('blob:')) {
+    URL.revokeObjectURL(attachment.url)
+  }
   const updated = (task.value.attachments ?? []).filter(a => a.id !== attachId)
   updateTask(task.value.id, { attachments: updated })
 }

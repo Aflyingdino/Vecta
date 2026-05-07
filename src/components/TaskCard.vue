@@ -6,15 +6,30 @@ import { STATUS_META } from '@/utils/constants'
 import { formatShortDate } from '@/utils/dates'
 
 const props = defineProps({
-  task: { type: Object, required: true },
-  source: { type: String, default: 'backlog' },
+  task: { 
+    type: Object, 
+    required: true,
+    validator: (task) => {
+      return task && typeof task.id === 'number' && typeof task.text === 'string'
+    }
+  },
+  source: { 
+    type: String, 
+    default: 'backlog',
+    validator: (source) => ['backlog', 'group', 'calendar'].includes(source)
+  },
 })
 
 const emit = defineEmits(['delete'])
 
-const taskLabels = computed(() =>
-  (props.task.labelIds ?? []).map((id) => projectLabels.value.find((l) => l.id === id)).filter(Boolean)
-)
+const taskLabels = computed(() => {
+  if (!props.task?.labelIds || !Array.isArray(props.task.labelIds)) return []
+  if (!projectLabels.value || !Array.isArray(projectLabels.value)) return []
+  
+  return props.task.labelIds
+    .map((id) => projectLabels.value?.find((l) => l?.id === id))
+    .filter(Boolean)
+})
 
 const isOverdue = computed(() => {
   if (!props.task.deadline || props.task.status === 'done') return false

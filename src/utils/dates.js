@@ -2,7 +2,7 @@
  * Date formatting utilities — single source of truth for locale-aware formatting.
  * All functions accept an ISO 8601 string or a Date object.
  */
-import { APP_LOCALE } from './constants'
+import { APP_LOCALE } from './constants.js'
 
 /**
  * Format a date as "DD Mon" (e.g. "02 Mar").

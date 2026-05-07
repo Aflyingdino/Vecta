@@ -75,8 +75,13 @@ const router = createRouter({
 })
 
 /* ── Navigation guard ── */
-router.beforeEach((to) => {
-  // Auth disabled for development - direct access to all routes
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  
+  if (requiresAuth && !isLoggedIn.value) {
+    // Redirect to login with return URL
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
 })
 
 export default router

@@ -14,10 +14,17 @@ async function handleLogin() {
   clearAuthError()
   try {
     await login(email.value, password.value)
-    await fetchProjects()
+    try {
+      await fetchProjects()
+    } catch (err) {
+      console.warn('Failed to fetch projects, continuing anyway:', err)
+    }
     const redirect = route.query.redirect || '/dashboard'
-    router.push(redirect)
-  } catch (_) { /* error shown via authError */ }
+    await router.push(redirect)
+  } catch (err) {
+    console.error('Login failed:', err)
+    // authError is already set by login()
+  }
 }
 </script>
 

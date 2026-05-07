@@ -36,11 +36,25 @@ async function openTaskInput() {
   await nextTick()
   taskInput.value?.focus()
 }
-function submitTask() {
+async function submitTask() {
+  if (!props.group?.id) {
+    console.error('Group not found')
+    return
+  }
+  
   const t = taskText.value.trim()
-  if (t) createTask({ text: t }, 'group', props.group.id)
-  showTaskInput.value = false
-  taskText.value = ''
+  if (!t) {
+    return
+  }
+  
+  try {
+    await createTask({ text: t }, 'group', props.group.id)
+    showTaskInput.value = false
+    taskText.value = ''
+  } catch (err) {
+    console.error('Failed to create task:', err)
+    // Keep input open so user can retry
+  }
 }
 function cancelTask() { showTaskInput.value = false; taskText.value = '' }
 

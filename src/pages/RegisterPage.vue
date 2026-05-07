@@ -21,9 +21,16 @@ async function handleRegister() {
   }
   try {
     await register({ name: name.value, email: email.value, password: password.value })
-    await fetchProjects()
-    router.push({ name: 'projects' })
-  } catch (_) { /* error shown via authError */ }
+    try {
+      await fetchProjects()
+    } catch (err) {
+      console.warn('Failed to fetch projects, continuing anyway:', err)
+    }
+    await router.push({ name: 'projects' })
+  } catch (err) {
+    console.error('Registration failed:', err)
+    // authError is already set by register()
+  }
 }
 
 const displayError = () => localError.value || authError.value

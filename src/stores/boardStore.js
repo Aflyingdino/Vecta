@@ -71,18 +71,47 @@ export async function moveGroupToGrid(fromId, toRow, toCol) {
   const board = b(); if (!board) return
   const fromGroup = board.groups.find(g => g.id === fromId)
   if (!fromGroup) return
+  
+  // Store original positions for rollback
+  const originalFromRow = fromGroup.gridRow
+  const originalFromCol = fromGroup.gridCol
+  
   const toGroup = board.groups.find(
     g => g.id !== fromId && (g.gridRow ?? 0) === toRow && (g.gridCol ?? 0) === toCol
   )
+  
+  let originalToRow = null
+  let originalToCol = null
+  
   if (toGroup) {
-    toGroup.gridRow = fromGroup.gridRow ?? 0
-    toGroup.gridCol = fromGroup.gridCol ?? 0
-    api.patch(`/groups/${toGroup.id}`, { gridRow: toGroup.gridRow, gridCol: toGroup.gridCol }).catch(() => {})
+    originalToRow = toGroup.gridRow
+    originalToCol = toGroup.gridCol
+    toGroup.gridRow = originalFromRow ?? 0
+    toGroup.gridCol = originalFromCol ?? 0
   }
+  
   fromGroup.gridRow = toRow
   fromGroup.gridCol = toCol
   compactColumns(board)
-  api.patch(`/groups/${fromGroup.id}`, { gridRow: fromGroup.gridRow, gridCol: fromGroup.gridCol }).catch(() => {})
+  
+  try {
+    // Update both groups on server
+    if (toGroup) {
+      await api.patch(`/groups/${toGroup.id}`, { gridRow: toGroup.gridRow, gridCol: toGroup.gridCol })
+    }
+    await api.patch(`/groups/${fromGroup.id}`, { gridRow: fromGroup.gridRow, gridCol: fromGroup.gridCol })
+  } catch (err) {
+    // Rollback on error
+    console.error('Failed to move group to grid:', err)
+    fromGroup.gridRow = originalFromRow
+    fromGroup.gridCol = originalFromCol
+    if (toGroup) {
+      toGroup.gridRow = originalToRow
+      toGroup.gridCol = originalToCol
+    }
+    compactColumns(board)
+    throw err
+  }
 }
 
 export async function updateGroup(groupId, data) {
@@ -170,21 +199,27 @@ export async function createTask(data, targetType, targetId) {
     groupId: (targetType === 'group' && targetId != null) ? targetId : null,
   }
 
-  const task = await api.post(`/projects/${board.id}/tasks`, payload)
-  task.notes = task.notes || []
-  task.comments = task.comments || []
-  task.attachments = task.attachments || []
+  try {
+    const task = await api.post(`/projects/${board.id}/tasks`, payload)
+    task.notes = task.notes || []
+    task.comments = task.comments || []
+    task.attachments = task.attachments || []
 
-  if (targetType === 'group' && targetId != null) {
-    const group = board.groups.find(g => g.id === targetId)
-    if (group) {
-      group.tasks.push(task)
-      logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
-      return
+    if (targetType === 'group' && targetId != null) {
+      const group = board.groups.find(g => g.id === targetId)
+      if (group) {
+        group.tasks.push(task)
+        logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
+        return task
+      }
     }
+    board.backlog.push(task)
+    logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
+    return task
+  } catch (err) {
+    console.error('Failed to create task:', err)
+    throw err
   }
-  board.backlog.push(task)
-  logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
 }
 
 export async function updateTask(taskId, data) {
@@ -192,52 +227,100 @@ export async function updateTask(taskId, data) {
   const task = findTask(taskId)
   if (!task) return
   const name = task.text
-  if (data.labelIds && JSON.stringify(data.labelIds) !== JSON.stringify(task.labelIds))
-    logActivity(board.id, 'labels_changed', `${actor()} changed labels on "${name}"`)
-  if ('deadline' in data && data.deadline !== task.deadline)
-    logActivity(board.id, 'deadline_changed', `${actor()} updated deadline on "${name}"`)
-  if ('status' in data && data.status !== task.status) {
-    logActivity(board.id, 'status_changed', `${actor()} marked "${name}" as ${STATUS_META[data.status]?.label ?? data.status}`)
+  
+  try {
+    if (data.labelIds && JSON.stringify(data.labelIds) !== JSON.stringify(task.labelIds))
+      logActivity(board.id, 'labels_changed', `${actor()} changed labels on "${name}"`)
+    if ('deadline' in data && data.deadline !== task.deadline)
+      logActivity(board.id, 'deadline_changed', `${actor()} updated deadline on "${name}"`)
+    if ('status' in data && data.status !== task.status) {
+      logActivity(board.id, 'status_changed', `${actor()} marked "${name}" as ${STATUS_META[data.status]?.label ?? data.status}`)
+    }
+    Object.assign(task, data)
+    await api.patch(`/tasks/${taskId}`, data)
+  } catch (err) {
+    console.error('Failed to update task:', err)
+    throw err
   }
-  Object.assign(task, data)
-  await api.patch(`/tasks/${taskId}`, data)
 }
 
 export async function deleteTask(taskId, source, groupId) {
   const board = b(); if (!board) return
   const task = findTask(taskId)
+  if (!task) return
+  
   const taskName = task?.text || 'a task'
-  if (source === 'backlog') {
-    const idx = board.backlog.findIndex((t) => t.id === taskId)
-    if (idx !== -1) board.backlog.splice(idx, 1)
-  } else if (source === 'group' && groupId != null) {
-    const group = board.groups.find((g) => g.id === groupId)
-    if (group) {
-      const idx = group.tasks.findIndex((t) => t.id === taskId)
-      if (idx !== -1) group.tasks.splice(idx, 1)
-    }
-  } else {
-    const bi = board.backlog.findIndex((t) => t.id === taskId)
-    if (bi !== -1) {
-      board.backlog.splice(bi, 1)
+  // Store state for potential rollback
+  const originalTask = { ...task }
+  let wasRemoved = false
+  
+  try {
+    if (source === 'backlog') {
+      const idx = board.backlog.findIndex((t) => t.id === taskId)
+      if (idx !== -1) {
+        board.backlog.splice(idx, 1)
+        wasRemoved = true
+      }
+    } else if (source === 'group' && groupId != null) {
+      const group = board.groups.find((g) => g.id === groupId)
+      if (group) {
+        const idx = group.tasks.findIndex((t) => t.id === taskId)
+        if (idx !== -1) {
+          group.tasks.splice(idx, 1)
+          wasRemoved = true
+        }
+      }
     } else {
-      for (const g of board.groups) {
-        const ti = g.tasks.findIndex((t) => t.id === taskId)
-        if (ti !== -1) { g.tasks.splice(ti, 1); break }
+      const bi = board.backlog.findIndex((t) => t.id === taskId)
+      if (bi !== -1) {
+        board.backlog.splice(bi, 1)
+        wasRemoved = true
+      } else {
+        for (const g of board.groups) {
+          const ti = g.tasks.findIndex((t) => t.id === taskId)
+          if (ti !== -1) { 
+            g.tasks.splice(ti, 1)
+            wasRemoved = true
+            break 
+          }
+        }
       }
     }
+    
+    logActivity(board.id, 'task_deleted', `${actor()} deleted task "${taskName}"`)
+    await api.delete(`/tasks/${taskId}`)
+  } catch (err) {
+    console.error('Failed to delete task:', err)
+    // Rollback the deletion if API call failed
+    if (wasRemoved) {
+      if (source === 'backlog') {
+        board.backlog.push(task)
+      } else if (source === 'group' && groupId != null) {
+        const group = board.groups.find((g) => g.id === groupId)
+        if (group) {
+          group.tasks.push(task)
+        }
+      }
+    }
+    throw err
   }
-  logActivity(board.id, 'task_deleted', `${actor()} deleted task "${taskName}"`)
-  await api.delete(`/tasks/${taskId}`)
 }
 
 export async function addComment(taskId, text) {
   const board = b(); if (!board) return
   const task = findTask(taskId)
   if (!task) return
-  const comment = await api.post(`/tasks/${taskId}/comments`, { text })
-  task.comments.push(comment)
-  logActivity(board.id, 'comment_added', `${actor()} commented on "${task.text}"`)
+  
+  try {
+    const comment = await api.post(`/tasks/${taskId}/comments`, { text })
+    task.comments = task.comments || []
+    task.comments.push(comment)
+    logActivity(board.id, 'comment_added', `${actor()} commented on "${task.text}"`)
+    return comment
+  } catch (err) {
+    console.error('Failed to add comment:', err)
+    throw err
+  }
 }
 
 export async function pinComment(taskId, commentId) {
@@ -245,16 +328,34 @@ export async function pinComment(taskId, commentId) {
   if (!task) return
   const c = task.comments.find(c => c.id === commentId)
   if (!c) return
-  const res = await api.patch(`/comments/${commentId}/pin`)
-  c.pinned = res.pinned
+  
+  const originalPinned = c.pinned
+  try {
+    const res = await api.patch(`/comments/${commentId}/pin`)
+    c.pinned = res.pinned
+    return c
+  } catch (err) {
+    console.error('Failed to pin comment:', err)
+    c.pinned = originalPinned
+    throw err
+  }
 }
 
 export async function deleteComment(taskId, commentId) {
   const task = findTask(taskId)
   if (!task) return
   const idx = task.comments.findIndex(c => c.id === commentId)
-  if (idx !== -1) task.comments.splice(idx, 1)
-  await api.delete(`/comments/${commentId}`)
+  if (idx === -1) return
+  
+  const removedComment = task.comments[idx]
+  try {
+    task.comments.splice(idx, 1)
+    await api.delete(`/comments/${commentId}`)
+  } catch (err) {
+    console.error('Failed to delete comment:', err)
+    task.comments.splice(idx, 0, removedComment)
+    throw err
+  }
 }
 
 export async function editComment(taskId, commentId, newText) {
@@ -262,9 +363,20 @@ export async function editComment(taskId, commentId, newText) {
   if (!task) return
   const c = task.comments.find(c => c.id === commentId)
   if (!c) return
-  const res = await api.patch(`/comments/${commentId}`, { text: newText })
-  c.text = res.text
-  c.editedAt = res.editedAt
+  
+  const originalText = c.text
+  const originalEditedAt = c.editedAt
+  try {
+    const res = await api.patch(`/comments/${commentId}`, { text: newText })
+    c.text = res.text
+    c.editedAt = res.editedAt
+    return c
+  } catch (err) {
+    console.error('Failed to edit comment:', err)
+    c.text = originalText
+    c.editedAt = originalEditedAt
+    throw err
+  }
 }
 
 /* -- Note actions -- */
@@ -272,9 +384,16 @@ export async function addNote(taskId, noteData) {
   const board = b(); if (!board) return
   const task = findTask(taskId)
   if (!task) return
-  if (!task.notes) task.notes = []
-  const note = await api.post(`/tasks/${taskId}/notes`, noteData)
-  task.notes.push(note)
+  
+  try {
+    if (!task.notes) task.notes = []
+    const note = await api.post(`/tasks/${taskId}/notes`, noteData)
+    task.notes.push(note)
+    return note
+  } catch (err) {
+    console.error('Failed to add note:', err)
+    throw err
+  }
 }
 
 export async function updateNote(taskId, noteId, updates) {
@@ -282,16 +401,34 @@ export async function updateNote(taskId, noteId, updates) {
   if (!task?.notes) return
   const note = task.notes.find(n => n.id === noteId)
   if (!note) return
-  const res = await api.patch(`/notes/${noteId}`, updates)
-  Object.assign(note, res)
+  
+  const originalNote = { ...note }
+  try {
+    const res = await api.patch(`/notes/${noteId}`, updates)
+    Object.assign(note, res)
+    return note
+  } catch (err) {
+    console.error('Failed to update note:', err)
+    Object.assign(note, originalNote)
+    throw err
+  }
 }
 
 export async function deleteNote(taskId, noteId) {
   const task = findTask(taskId)
   if (!task?.notes) return
   const idx = task.notes.findIndex(n => n.id === noteId)
-  if (idx !== -1) task.notes.splice(idx, 1)
-  await api.delete(`/notes/${noteId}`)
+  if (idx === -1) return
+  
+  const removedNote = task.notes[idx]
+  try {
+    task.notes.splice(idx, 1)
+    await api.delete(`/notes/${noteId}`)
+  } catch (err) {
+    console.error('Failed to delete note:', err)
+    task.notes.splice(idx, 0, removedNote)
+    throw err
+  }
 }
 
 /* -- Label actions -- */
@@ -305,20 +442,52 @@ export async function updateLabel(labelId, name, color) {
   const board = b(); if (!board) return
   const label = board.labels.find((l) => l.id === labelId)
   if (!label) return
-  const res = await api.patch(`/labels/${labelId}`, { name, color })
-  label.name = res.name
-  label.color = res.color
+  
+  const originalLabel = { ...label }
+  try {
+    const res = await api.patch(`/labels/${labelId}`, { name, color })
+    label.name = res.name || name
+    label.color = res.color || color
+    return label
+  } catch (err) {
+    console.error('Failed to update label:', err)
+    Object.assign(label, originalLabel)
+    throw err
+  }
 }
 
 export async function deleteLabel(labelId) {
   const board = b(); if (!board) return
   const idx = board.labels.findIndex((l) => l.id === labelId)
-  if (idx !== -1) board.labels.splice(idx, 1)
-  const all = [...board.backlog, ...board.groups.flatMap((g) => g.tasks)]
-  for (const task of all) {
-    task.labelIds = task.labelIds.filter((id) => id !== labelId)
+  if (idx === -1) return
+  
+  const removedLabel = board.labels[idx]
+  const taskLabelUpdates = []
+  
+  try {
+    board.labels.splice(idx, 1)
+    
+    const all = [...board.backlog, ...board.groups.flatMap((g) => g.tasks)]
+    for (const task of all) {
+      if (task.labelIds && Array.isArray(task.labelIds)) {
+        const originalLabelIds = [...task.labelIds]
+        task.labelIds = task.labelIds.filter((id) => id !== labelId)
+        if (originalLabelIds.length !== task.labelIds.length) {
+          taskLabelUpdates.push({ task, originalLabelIds })
+        }
+      }
+    }
+    
+    await api.delete(`/labels/${labelId}`)
+  } catch (err) {
+    console.error('Failed to delete label:', err)
+    board.labels.splice(idx, 0, removedLabel)
+    // Rollback task label updates
+    for (const { task, originalLabelIds } of taskLabelUpdates) {
+      task.labelIds = originalLabelIds
+    }
+    throw err
   }
-  await api.delete(`/labels/${labelId}`)
 }
 
 /* -- Drag & Drop -- */
