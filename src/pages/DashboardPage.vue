@@ -226,8 +226,8 @@ function goToActivityTask(entry) {
     <div class="dashboard-page">
       <!-- Header -->
       <div class="page-header">
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-sub">Welcome back, {{ user.name }}</p>
+        <h1 class="page-title">Overzicht</h1>
+        <p class="page-sub">Welkom terug, {{ user.name }}</p>
       </div>
 
       <!-- Stats row (always visible) -->
@@ -251,11 +251,11 @@ function goToActivityTask(entry) {
         <div v-if="statFilter" class="stat-panel">
           <div class="stat-panel-header">
             <span class="stat-panel-title">{{ statFilterLabel }} <span class="stat-panel-count">{{ filteredStatTasks.length }}</span></span>
-            <button class="stat-panel-close" @click="statFilter = null" aria-label="Close">
+            <button class="stat-panel-close" @click="statFilter = null" aria-label="Sluiten">
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">No tasks in this category.</div>
+          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">Geen taken in deze categorie.</div>
           <div class="stat-panel-list" v-else>
             <div
               v-for="t in filteredStatTasks"
@@ -304,7 +304,7 @@ function goToActivityTask(entry) {
           <section class="dash-section" v-if="overdueTasks.length">
             <h2 class="section-title">
               <span class="dot dot--red"></span>
-              Overdue ({{ overdueTasks.length }})
+              Te laat ({{ overdueTasks.length }})
             </h2>
             <div class="task-list">
               <div
@@ -351,7 +351,7 @@ function goToActivityTask(entry) {
               <router-link to="/activity" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
             </template>
             <div v-else class="empty-section">
-              <p>No tasks yet. <router-link to="/projects">Create a project</router-link> to get started.</p>
+              <p>Nog geen taken. <router-link to="/projects">Maak een project</router-link> om te starten.</p>
             </div>
           </section>
         </div>
@@ -363,7 +363,7 @@ function goToActivityTask(entry) {
           <section class="dash-section">
             <h2 class="section-title">
               <span class="dot dot--green"></span>
-              Projects ({{ projects.length }})
+              Projecten ({{ projects.length }})
             </h2>
             <div class="project-list" v-if="projects.length">
               <router-link
@@ -377,7 +377,7 @@ function goToActivityTask(entry) {
                 <div class="project-row__info">
                   <span class="project-row__name">{{ p.name }}</span>
                   <span class="project-row__count">
-                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} tasks
+                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} taken
                   </span>
                 </div>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="arrow">
@@ -386,7 +386,7 @@ function goToActivityTask(entry) {
               </router-link>
             </div>
             <div v-else class="empty-section">
-              <p><router-link to="/projects">Create your first project</router-link></p>
+              <p><router-link to="/projects">Maak je eerste project</router-link></p>
             </div>
           </section>
         </div>
@@ -398,19 +398,19 @@ function goToActivityTask(entry) {
           <section class="dash-section">
             <h2 class="section-title">
               <span class="dot dot--orange"></span>
-              Recent activity
+              Recente activiteit
               <span class="activity-unread-count" v-if="activityFeed.filter(e => !isRead(e.id)).length">
-                {{ activityFeed.filter(e => !isRead(e.id)).length }} unread
+                {{ activityFeed.filter(e => !isRead(e.id)).length }} ongelezen
               </span>
-              <button v-if="activityFeed.length" class="activity-mark-all-btn" @click="markAllRead">Mark all read</button>
+              <button v-if="activityFeed.length" class="activity-mark-all-btn" @click="markAllRead">Alles als gelezen markeren</button>
             </h2>
 
             <!-- Selection toolbar -->
             <Transition name="fade">
               <div v-if="selectedActivityIds.size > 0" class="activity-selection-bar">
-                <span>{{ selectedActivityIds.size }} selected</span>
-                <button class="activity-sel-btn" @click="markSelectedRead">Mark read</button>
-                <button class="activity-sel-btn activity-sel-btn--ghost" @click="clearSelection">Clear</button>
+                <span>{{ selectedActivityIds.size }} geselecteerd</span>
+                <button class="activity-sel-btn" @click="markSelectedRead">Markeer als gelezen</button>
+                <button class="activity-sel-btn activity-sel-btn--ghost" @click="clearSelection">Wissen</button>
               </div>
             </Transition>
 
@@ -477,7 +477,7 @@ function goToActivityTask(entry) {
                   v-if="entry.taskId || entry.projectId"
                   class="activity-mute-btn"
                   :class="{ 'activity-mute-btn--active': entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId) }"
-                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Unmute notifications' : 'Mute notifications'"
+                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Meldingen inschakelen' : 'Meldingen dempen'"
                   @click.stop="entry.taskId ? toggleMuteTask(entry.taskId) : toggleMuteProject(entry.projectId)"
                 >
                   <svg v-if="!(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId))" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -491,7 +491,7 @@ function goToActivityTask(entry) {
               </div>
             </div>
             <div v-else class="empty-section">
-              <p>No activity yet. Changes to tasks will appear here.</p>
+              <p>Nog geen activiteit. Wijzigingen aan taken verschijnen hier.</p>
             </div>
           </section>
         </div>
@@ -526,9 +526,9 @@ function goToActivityTask(entry) {
                 <div class="activity-modal-actions">
                   <button v-if="activityDetail.projectId" class="activity-modal-goto" @click="goToActivityTask(activityDetail)">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-                    Go to project
+                    Ga naar project
                   </button>
-                  <button class="activity-modal-dismiss" @click="closeActivityDetail">Close</button>
+                  <button class="activity-modal-dismiss" @click="closeActivityDetail">Sluiten</button>
                 </div>
               </div>
             </div>

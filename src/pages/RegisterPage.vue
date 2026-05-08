@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
@@ -12,15 +12,38 @@ const password = ref('')
 const confirm = ref('')
 const localError = ref('')
 
+const passwordChecks = computed(() => ({
+  minLength: password.value.length >= 10,
+  hasLower: /[a-z]/.test(password.value),
+  hasUpper: /[A-Z]/.test(password.value),
+  hasNumber: /\d/.test(password.value),
+}))
+
+const passwordValid = computed(() => Object.values(passwordChecks.value).every(Boolean))
+
+function validateRegisterForm() {
+  const trimmedName = name.value.trim()
+  const trimmedEmail = email.value.trim().toLowerCase()
+
+  if (!trimmedName) return 'Naam is verplicht'
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
+  if (!passwordValid.value) return 'Wachtwoord voldoet niet aan de eisen'
+  if (password.value !== confirm.value) return 'Wachtwoorden komen niet overeen'
+  return null
+}
+
 async function handleRegister() {
   clearAuthError()
   localError.value = ''
-  if (password.value !== confirm.value) {
-    localError.value = 'Passwords do not match'
+
+  const validationError = validateRegisterForm()
+  if (validationError) {
+    localError.value = validationError
     return
   }
+
   try {
-    await register({ name: name.value, email: email.value, password: password.value })
+    await register({ name: name.value.trim(), email: email.value.trim().toLowerCase(), password: password.value })
     try {
       await fetchProjects()
     } catch (err) {
@@ -43,36 +66,42 @@ const displayError = () => localError.value || authError.value
         <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
         <span>Vecta</span>
       </router-link>
-      <h1 class="auth-title">Create account</h1>
-      <p class="auth-sub">Free forever, no credit card needed</p>
+      <h1 class="auth-title">Account aanmaken</h1>
+      <p class="auth-sub">Gratis te gebruiken, zonder creditcard</p>
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleRegister">
         <label class="form-label">
-          Full name
-          <input v-model="name" type="text" class="form-input" placeholder="Jane Smith" required autocomplete="name" />
+          Volledige naam
+          <input v-model="name" type="text" class="form-input" placeholder="Jan Jansen" required autocomplete="name" />
         </label>
         <label class="form-label">
-          Email
-          <input v-model="email" type="email" class="form-input" placeholder="you@example.com" required autocomplete="email" />
+          E-mail
+          <input v-model="email" type="email" class="form-input" placeholder="jij@voorbeeld.nl" required autocomplete="email" />
         </label>
         <label class="form-label">
-          Password
-          <input v-model="password" type="password" class="form-input" placeholder="Enter password" required autocomplete="new-password" />
+          Wachtwoord
+          <input v-model="password" type="password" class="form-input" placeholder="Vul een wachtwoord in" required autocomplete="new-password" minlength="10" />
         </label>
+        <ul class="password-rules">
+          <li :class="{ 'rule-ok': passwordChecks.minLength }">Minimaal 10 tekens</li>
+          <li :class="{ 'rule-ok': passwordChecks.hasLower }">Minimaal 1 kleine letter</li>
+          <li :class="{ 'rule-ok': passwordChecks.hasUpper }">Minimaal 1 hoofdletter</li>
+          <li :class="{ 'rule-ok': passwordChecks.hasNumber }">Minimaal 1 cijfer</li>
+        </ul>
         <label class="form-label">
-          Confirm password
-          <input v-model="confirm" type="password" class="form-input" placeholder="Repeat password" required autocomplete="new-password" />
+          Herhaal wachtwoord
+          <input v-model="confirm" type="password" class="form-input" placeholder="Herhaal wachtwoord" required autocomplete="new-password" />
         </label>
-        <button type="submit" class="btn-submit" :disabled="authLoading">
+        <button type="submit" class="btn-submit" :disabled="authLoading || !passwordValid">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Creating account…' : 'Create account' }}
+          {{ authLoading ? 'Account wordt aangemaakt…' : 'Account aanmaken' }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Already have an account? <router-link to="/login">Log in</router-link>
+        Heb je al een account? <router-link to="/login">Inloggen</router-link>
       </p>
     </div>
   </div>
@@ -119,6 +148,18 @@ const displayError = () => localError.value || authError.value
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
+.password-rules {
+  margin: -6px 0 2px;
+  padding-left: 18px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.rule-ok {
+  color: #46a758;
+}
 .form-label {
   display: flex;
   flex-direction: column;

@@ -261,6 +261,15 @@ export async function deleteTask(taskId, source, groupId) {
         board.backlog.splice(idx, 1)
         wasRemoved = true
       }
+    } else if (source === 'archived-group' && groupId != null) {
+      const group = board.groups.find((g) => g.id === groupId)
+      if (group && Array.isArray(group.archivedTasks)) {
+        const idx = group.archivedTasks.findIndex((t) => t.id === taskId)
+        if (idx !== -1) {
+          group.archivedTasks.splice(idx, 1)
+          wasRemoved = true
+        }
+      }
     } else if (source === 'group' && groupId != null) {
       const group = board.groups.find((g) => g.id === groupId)
       if (group) {
@@ -295,6 +304,12 @@ export async function deleteTask(taskId, source, groupId) {
     if (wasRemoved) {
       if (source === 'backlog') {
         board.backlog.push(task)
+      } else if (source === 'archived-group' && groupId != null) {
+        const group = board.groups.find((g) => g.id === groupId)
+        if (group) {
+          if (!Array.isArray(group.archivedTasks)) group.archivedTasks = []
+          group.archivedTasks.push(task)
+        }
       } else if (source === 'group' && groupId != null) {
         const group = board.groups.find((g) => g.id === groupId)
         if (group) {
@@ -302,6 +317,73 @@ export async function deleteTask(taskId, source, groupId) {
         }
       }
     }
+    throw err
+  }
+}
+
+export async function archiveTask(taskId, source = 'group', groupId = null) {
+  const board = b(); if (!board) return
+
+  let task = null
+  let originGroup = null
+
+  if (source === 'backlog') {
+    const idx = board.backlog.findIndex((t) => t.id === taskId)
+    if (idx !== -1) task = board.backlog.splice(idx, 1)[0]
+  } else {
+    const group = groupId != null
+      ? board.groups.find((g) => g.id === groupId)
+      : board.groups.find((g) => g.tasks.some((t) => t.id === taskId))
+    if (group) {
+      const idx = group.tasks.findIndex((t) => t.id === taskId)
+      if (idx !== -1) {
+        task = group.tasks.splice(idx, 1)[0]
+        originGroup = group
+      }
+    }
+  }
+
+  if (!task) return
+
+  task.archivedAt = new Date().toISOString()
+
+  if (originGroup) {
+    if (!Array.isArray(originGroup.archivedTasks)) originGroup.archivedTasks = []
+    originGroup.archivedTasks.unshift(task)
+  }
+
+  try {
+    await api.post(`/tasks/${taskId}/archive`)
+  } catch (err) {
+    if (originGroup) {
+      originGroup.archivedTasks = (originGroup.archivedTasks || []).filter((t) => t.id !== taskId)
+      originGroup.tasks.push(task)
+    } else {
+      board.backlog.push(task)
+    }
+    delete task.archivedAt
+    throw err
+  }
+}
+
+export async function restoreTask(taskId, groupId) {
+  const board = b(); if (!board) return
+  const group = board.groups.find((g) => g.id === groupId)
+  if (!group || !Array.isArray(group.archivedTasks)) return
+
+  const idx = group.archivedTasks.findIndex((t) => t.id === taskId)
+  if (idx === -1) return
+
+  const task = group.archivedTasks.splice(idx, 1)[0]
+  delete task.archivedAt
+  group.tasks.push(task)
+
+  try {
+    await api.post(`/tasks/${taskId}/restore`)
+  } catch (err) {
+    group.tasks = group.tasks.filter((t) => t.id !== taskId)
+    task.archivedAt = new Date().toISOString()
+    group.archivedTasks.unshift(task)
     throw err
   }
 }

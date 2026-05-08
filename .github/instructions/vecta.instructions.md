@@ -51,6 +51,27 @@ When two approaches produce equivalent results, use the simpler one. Do not intr
 
 ---
 
+## CI and Deployment Invariants (build.yml)
+
+When modifying CI/CD, preserve these required outcomes in `.github/workflows/build.yml` unless explicitly told otherwise:
+
+- Build frontend with Vite so production branch contains compiled static assets (`dist` output: HTML/CSS/JS).
+- Keep SPA hosting preparation (`dist/404.html` and `dist/.htaccess`) for refresh-safe routing.
+- Deploy backend runtime files needed by the server: `api/` and `db/`.
+- Do not change deployment to frontend-only or backend-only unless the user explicitly asks.
+- Do not remove token-based authenticated push to `production` branch.
+
+Before finishing any workflow edit, verify these are still true:
+
+1. `npm ci` and `npm run build` are part of deploy flow.
+2. `dist` is copied to production.
+3. `api` and `db` are copied to production.
+4. Push target remains `production` branch.
+
+If context is missing, default to preserving current behavior rather than simplifying deployment scope.
+
+---
+
 ## Response Style
 
 - No filler, no praise, no hedging.

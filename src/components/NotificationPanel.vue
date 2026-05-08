@@ -29,18 +29,18 @@ function iconFor(type) { return ICONS[type] || ICONS.default }
 function formatRelative(iso) {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1) return 'zojuist'
+  if (m < 60) return `${m}m geleden`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+  if (h < 24) return `${h}u geleden`
+  return `${Math.floor(h / 24)}d geleden`
 }
 
 function formatFull(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' at ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' om ' + d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
 }
 
 function handleClick(event, n) {
@@ -98,23 +98,23 @@ function archiveSelected() {
       <!-- Header -->
       <div class="notif-header">
         <div class="notif-header-left">
-          <span class="notif-title">Notifications</span>
+          <span class="notif-title">Meldingen</span>
           <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount }}</span>
         </div>
         <div class="notif-header-right">
-          <button v-if="selected.size > 0" class="notif-action-btn notif-action-btn--danger" @click="deleteSelected" title="Delete selected">
+          <button v-if="selected.size > 0" class="notif-action-btn notif-action-btn--danger" @click="deleteSelected" title="Selectie verwijderen">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21l-1.022.165M4.772 5.79l1.022.165m0 0l1.08 14.023A2.25 2.25 0 009.118 22h5.764a2.25 2.25 0 002.244-2.077l1.08-14.023"/></svg>
-            Delete ({{ selected.size }})
+            Verwijderen ({{ selected.size }})
           </button>
-          <button v-if="selected.size > 0" class="notif-action-btn" @click="archiveSelected" title="Archive selected">
+          <button v-if="selected.size > 0" class="notif-action-btn" @click="archiveSelected" title="Selectie archiveren">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75"/></svg>
-            Archive ({{ selected.size }})
+            Archiveren ({{ selected.size }})
           </button>
-          <button v-if="unreadCount > 0" class="notif-action-btn" @click="markAllRead" title="Mark all as read">
+          <button v-if="unreadCount > 0" class="notif-action-btn" @click="markAllRead" title="Alles als gelezen markeren">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-            Mark all read
+            Alles gelezen
           </button>
-          <button class="notif-close" @click="emit('close')" aria-label="Close notifications">
+          <button class="notif-close" @click="emit('close')" aria-label="Meldingen sluiten">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -123,7 +123,7 @@ function archiveSelected() {
       <!-- Multi-select hint -->
       <div v-if="notifications.length" class="notif-hint">
         <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M13 16h-1v-4h-1m1-4h.01"/><circle cx="12" cy="12" r="10"/></svg>
-        Shift+click to range-select · Ctrl+click to multi-select
+        Shift+klik voor bereikselectie · Ctrl+klik voor meerselectie
       </div>
 
       <!-- List -->
@@ -151,10 +151,10 @@ function archiveSelected() {
               <div class="notif-item-time">{{ formatRelative(n.createdAt) }}</div>
             </div>
             <div class="notif-item-actions" @click.stop>
-              <button class="notif-item-btn" @click="markRead(n.id); archiveNotification(n.id)" title="Archive">
+              <button class="notif-item-btn" @click="markRead(n.id); archiveNotification(n.id)" title="Archiveren">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5"/></svg>
               </button>
-              <button class="notif-item-btn notif-item-btn--danger" @click="deleteNotification(n.id)" title="Delete">
+              <button class="notif-item-btn notif-item-btn--danger" @click="deleteNotification(n.id)" title="Verwijderen">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
@@ -164,7 +164,7 @@ function archiveSelected() {
 
       <div v-else class="notif-empty">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        <p>No notifications</p>
+        <p>Geen meldingen</p>
       </div>
     </div>
   </Teleport>
@@ -182,7 +182,7 @@ function archiveSelected() {
               <span class="notif-detail-title">{{ notifDetail.title }}</span>
               <span class="notif-detail-time">{{ formatFull(notifDetail.createdAt) }}</span>
             </div>
-            <button class="notif-detail-close" @click="notifDetail = null" aria-label="Close">
+            <button class="notif-detail-close" @click="notifDetail = null" aria-label="Sluiten">
               <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
@@ -191,23 +191,23 @@ function archiveSelected() {
             <div class="notif-detail-meta">
               <span v-if="notifDetail.projectId" class="notif-detail-meta-row">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                Project ID: {{ notifDetail.projectId }}
+                Project-ID: {{ notifDetail.projectId }}
               </span>
               <span v-if="notifDetail.groupId" class="notif-detail-meta-row">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
-                Group: {{ notifDetail.groupId }}
+                Groep: {{ notifDetail.groupId }}
               </span>
             </div>
           </div>
           <div class="notif-detail-footer">
-            <button class="notif-detail-dismiss" @click="notifDetail = null">Dismiss</button>
+            <button class="notif-detail-dismiss" @click="notifDetail = null">Sluiten</button>
             <button
               v-if="notifDetail.taskId"
               class="notif-detail-goto"
               @click="goToTask(notifDetail)"
             >
               <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-              Go to task
+              Ga naar taak
             </button>
           </div>
         </div>

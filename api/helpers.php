@@ -226,7 +226,32 @@ function normalizeEmail(string $email): string
 
 function validPassword(string $password): bool
 {
-    return trim($password) !== '';
+    return passwordValidationError($password) === null;
+}
+
+function passwordValidationError(string $password): ?string
+{
+    if (trim($password) === '') {
+        return 'Password is required';
+    }
+
+    if (mb_strlen($password) < PASSWORD_MIN_LENGTH) {
+        return 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters';
+    }
+
+    if (!preg_match('/[a-z]/', $password)) {
+        return 'Password must include at least one lowercase letter';
+    }
+
+    if (!preg_match('/[A-Z]/', $password)) {
+        return 'Password must include at least one uppercase letter';
+    }
+
+    if (!preg_match('/\d/', $password)) {
+        return 'Password must include at least one number';
+    }
+
+    return null;
 }
 
 function validColor(?string $color): bool

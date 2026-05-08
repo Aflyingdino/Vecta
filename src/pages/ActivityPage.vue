@@ -86,8 +86,8 @@ function goToTask(task) {
     <div class="activity-page">
       <!-- Header -->
       <div class="page-header">
-        <h1 class="page-title">All Tasks</h1>
-        <p class="page-sub">Complete overview of all your tasks</p>
+        <h1 class="page-title">Alle taken</h1>
+        <p class="page-sub">Volledig overzicht van al je taken</p>
       </div>
 
       <!-- Search bar -->
@@ -95,7 +95,7 @@ function goToTask(task) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search tasks..."
+          placeholder="Taken zoeken..."
           class="search-input"
         />
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="search-icon">
@@ -111,28 +111,28 @@ function goToTask(task) {
           :class="{ 'filter-btn--active': activeFilter === 'all' }"
           @click="activeFilter = 'all'"
         >
-          All tasks ({{ stats.total }})
+          Alle taken ({{ stats.total }})
         </button>
         <button
           class="filter-btn filter-btn--accent"
           :class="{ 'filter-btn--active': activeFilter === 'started' }"
           @click="activeFilter = 'started'"
         >
-          In progress ({{ stats.started }})
+          Bezig ({{ stats.started }})
         </button>
         <button
           class="filter-btn filter-btn--warn"
           :class="{ 'filter-btn--active': activeFilter === 'overdue' }"
           @click="activeFilter = 'overdue'"
         >
-          Overdue ({{ stats.overdue }})
+          Te laat ({{ stats.overdue }})
         </button>
         <button
           class="filter-btn filter-btn--done"
           :class="{ 'filter-btn--active': activeFilter === 'done' }"
           @click="activeFilter = 'done'"
         >
-          Completed ({{ stats.done }})
+          Klaar ({{ stats.done }})
         </button>
       </div>
 
@@ -142,13 +142,13 @@ function goToTask(task) {
           <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <p class="empty-title">No tasks found</p>
-          <p class="empty-desc">{{ searchQuery ? 'Try adjusting your search query' : 'All tasks completed or no tasks exist yet' }}</p>
+          <p class="empty-title">Geen taken gevonden</p>
+          <p class="empty-desc">{{ searchQuery ? 'Pas je zoekopdracht aan' : 'Alle taken zijn afgerond of er zijn nog geen taken' }}</p>
         </div>
 
         <div v-else class="tasks-table">
           <div class="table-header">
-            <div class="col-task">Task</div>
+            <div class="col-task">Taak</div>
             <div class="col-project">Project</div>
             <div class="col-status">Status</div>
             <div class="col-deadline">Deadline</div>

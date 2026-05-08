@@ -58,7 +58,7 @@ const filteredStatTasks = computed(() => {
 })
 
 const statFilterLabel = computed(() => ({
-  started: 'In progress', overdue: 'Overdue', done: 'Completed'
+  started: 'Bezig', overdue: 'Te laat', done: 'Klaar'
 })[statFilter.value])
 
 function toggleStatFilter(key) {
@@ -86,7 +86,7 @@ function openTask(taskId) {
           </div>
           <div class="header-text">
             <h1 class="page-title">{{ activeProject.name }}</h1>
-            <p class="page-sub">{{ activeProject.description || 'Project overview' }}</p>
+            <p class="page-sub">{{ activeProject.description || 'Projectoverzicht' }}</p>
           </div>
         </div>
       </div>
@@ -95,15 +95,15 @@ function openTask(taskId) {
       <div class="stats-grid">
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
           <div class="stat-value">{{ stats.started }}</div>
-          <div class="stat-label">In progress</div>
+          <div class="stat-label">Bezig</div>
         </button>
         <button class="stat-card stat-card--warn" :class="{ 'stat-card--active': statFilter === 'overdue' }" @click="toggleStatFilter('overdue')">
           <div class="stat-value">{{ overdueTasks.length }}</div>
-          <div class="stat-label">Overdue</div>
+          <div class="stat-label">Te laat</div>
         </button>
         <button class="stat-card stat-card--done" :class="{ 'stat-card--active': statFilter === 'done' }" @click="toggleStatFilter('done')">
           <div class="stat-value">{{ stats.done }}</div>
-          <div class="stat-label">Completed</div>
+          <div class="stat-label">Klaar</div>
         </button>
       </div>
 
@@ -112,11 +112,11 @@ function openTask(taskId) {
         <div v-if="statFilter" class="stat-panel">
           <div class="stat-panel-header">
             <span class="stat-panel-title">{{ statFilterLabel }} <span class="stat-panel-count">{{ filteredStatTasks.length }}</span></span>
-            <button class="stat-panel-close" @click="statFilter = null" aria-label="Close">
+            <button class="stat-panel-close" @click="statFilter = null" aria-label="Sluiten">
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">No tasks in this category.</div>
+          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">Geen taken in deze categorie.</div>
           <div class="stat-panel-list" v-else>
             <div
               v-for="t in filteredStatTasks"
@@ -138,7 +138,7 @@ function openTask(taskId) {
         <section class="dash-section" v-if="overdueTasks.length">
           <h2 class="section-title">
             <span class="dot dot--red"></span>
-            Overdue ({{ overdueTasks.length }})
+            Te laat ({{ overdueTasks.length }})
           </h2>
           <div class="task-list">
             <div
@@ -183,7 +183,7 @@ function openTask(taskId) {
             <router-link :to="{ name: 'activity' }" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
           </template>
           <div v-else class="empty-section">
-            <p>No tasks yet in this project.</p>
+            <p>Nog geen taken in dit project.</p>
           </div>
         </section>
       </div>

@@ -169,6 +169,7 @@ function onTaskDragStart(event, task, project) {
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('taskId', String(task.id))
   event.dataTransfer.setData('projectId', String(project.id))
+  event.dataTransfer.setData('text/plain', JSON.stringify({ taskId: task.id, projectId: project.id }))
   dragGrabOffsetMin.value = 0
 }
 
@@ -186,6 +187,7 @@ function onBlockDragStart(event, task) {
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('taskId', String(task.id))
   event.dataTransfer.setData('projectId', String(task._projectId))
+  event.dataTransfer.setData('text/plain', JSON.stringify({ taskId: task.id, projectId: task._projectId }))
   // Capture where inside the block the user grabbed (in minutes)
   const rect = event.currentTarget.getBoundingClientRect()
   const grabPx = event.clientY - rect.top
@@ -247,12 +249,35 @@ function isBeyondDeadline(task, dayDate, minute) {
   return dropDate > deadlineEnd
 }
 
-function onDrop(event, dayDate) {
+function parseDragPayload(event) {
+  const rawTaskId = Number.parseInt(event.dataTransfer.getData('taskId'), 10)
+  const rawProjectId = Number.parseInt(event.dataTransfer.getData('projectId'), 10)
+  if (Number.isInteger(rawTaskId) && Number.isInteger(rawProjectId)) {
+    return { taskId: rawTaskId, projectId: rawProjectId }
+  }
+
+  const textPayload = event.dataTransfer.getData('text/plain')
+  if (!textPayload) return null
+
+  try {
+    const parsed = JSON.parse(textPayload)
+    const taskId = Number.parseInt(String(parsed?.taskId ?? ''), 10)
+    const projectId = Number.parseInt(String(parsed?.projectId ?? ''), 10)
+    if (!Number.isInteger(taskId) || !Number.isInteger(projectId)) return null
+    return { taskId, projectId }
+  } catch {
+    return null
+  }
+}
+
+async function onDrop(event, dayDate) {
   event.preventDefault()
   dragOverCell.value = null
-  const taskId    = parseInt(event.dataTransfer.getData('taskId'))
-  const projectId = parseInt(event.dataTransfer.getData('projectId'))
-  if (!taskId || !projectId) return
+  const payload = parseDragPayload(event)
+  if (!payload) return
+
+  const taskId = payload.taskId
+  const projectId = payload.projectId
 
   let minute = minuteFromEvent(event)
   const p = projects.value.find(p => p.id === projectId)
@@ -290,7 +315,7 @@ function onDrop(event, dayDate) {
     return // leave task at its original position
   }
 
-  scheduleTask(projectId, taskId, buildISO(dayDate, minute), snappedDuration)
+  await scheduleTask(projectId, taskId, buildISO(dayDate, minute), snappedDuration)
   dragGrabOffsetMin.value = 0
 }
 
@@ -607,12 +632,12 @@ function deadlineTasksForDay(date) {
           <!-- Zoom (only schedule) -->
           <div class="cal-topbar-right">
             <template v-if="viewMode === 'schedule'">
-              <button class="zoom-btn" @click="zoomOut" title="Zoom out">
+              <button class="zoom-btn" @click="zoomOut" title="Uitzoomen">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" d="M20 12H4"/>
                 </svg>
               </button>
-              <button class="zoom-btn" @click="zoomIn" title="Zoom in">
+              <button class="zoom-btn" @click="zoomIn" title="Inzoomen">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" d="M12 4v16M4 12h16"/>
                 </svg>
@@ -711,7 +736,7 @@ function deadlineTasksForDay(date) {
                   </div>
                   <!-- Color palette — direct child of task-block (not inside inner) so it is not clipped -->
                   <div class="task-tint-wrap" @click.stop>
-                    <button class="task-tint-btn" @click.stop="activeTintTaskId = activeTintTaskId === task.id ? null : task.id" title="Change color">
+                    <button class="task-tint-btn" @click.stop="activeTintTaskId = activeTintTaskId === task.id ? null : task.id" title="Kleur wijzigen">
                       <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>
                     <div v-if="activeTintTaskId === task.id" class="task-tint-palette">
@@ -725,7 +750,7 @@ function deadlineTasksForDay(date) {
                       <button
                         class="tint-swatch tint-swatch--none"
                         @click.stop="updateTask(task.id, { calendarColor: null }); activeTintTaskId = null"
-                        title="Clear color"
+                        title="Kleur wissen"
                       >✕</button>
                     </div>
                   </div>
@@ -733,7 +758,7 @@ function deadlineTasksForDay(date) {
                     class="resize-handle"
                     @mousedown.stop="startResize($event, task)"
                     @dragstart.stop.prevent
-                    title="Drag to resize"
+                    title="Slepen om grootte te wijzigen"
                   ></div>
                 </div>
               </div>

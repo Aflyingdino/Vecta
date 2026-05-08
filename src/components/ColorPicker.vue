@@ -60,13 +60,13 @@ function onNativeChange(e) {
         :class="{ 'cp-swatch--active': modelValue === c && !isCustom }"
         :style="{ background: c, borderColor: c === '#ffffff' ? '#52525f' : c }"
         :title="c"
-        :aria-label="'Pick colour ' + c"
+        :aria-label="'Kies kleur ' + c"
         :aria-pressed="modelValue === c && !isCustom"
         @click="pick(c)"
       />
 
       <!-- Custom colour button (wraps a hidden native input) -->
-      <div class="cp-custom-wrap" :class="{ 'cp-swatch--active': isCustom }" :title="isCustom ? modelValue : 'Custom colour…'">
+      <div class="cp-custom-wrap" :class="{ 'cp-swatch--active': isCustom }" :title="isCustom ? modelValue : 'Aangepaste kleur…'">
         <button type="button" class="cp-custom-btn" @click="openNative" :style="isCustom ? { background: modelValue } : {}">
           <span v-if="!isCustom" class="cp-rainbow" aria-hidden="true"></span>
           <span v-else class="cp-custom-hex">{{ modelValue }}</span>

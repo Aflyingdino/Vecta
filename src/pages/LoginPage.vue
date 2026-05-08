@@ -9,11 +9,27 @@ const route = useRoute()
 
 const email = ref('')
 const password = ref('')
+const localError = ref('')
+
+function validateLoginForm() {
+  const trimmedEmail = email.value.trim().toLowerCase()
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
+  if (!password.value.trim()) return 'Wachtwoord is verplicht'
+  return null
+}
 
 async function handleLogin() {
   clearAuthError()
+  localError.value = ''
+
+  const validationError = validateLoginForm()
+  if (validationError) {
+    localError.value = validationError
+    return
+  }
+
   try {
-    await login(email.value, password.value)
+    await login(email.value.trim().toLowerCase(), password.value)
     try {
       await fetchProjects()
     } catch (err) {
@@ -35,28 +51,28 @@ async function handleLogin() {
         <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
         <span>Vecta</span>
       </router-link>
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="auth-sub">Log in to your account</p>
+      <h1 class="auth-title">Welkom terug</h1>
+      <p class="auth-sub">Log in op je account</p>
 
-      <div v-if="authError" class="auth-error">{{ authError }}</div>
+      <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleLogin">
         <label class="form-label">
-          Email
-          <input v-model="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+          E-mail
+          <input v-model="email" type="email" class="form-input" placeholder="jij@voorbeeld.nl" autocomplete="email" />
         </label>
         <label class="form-label">
-          Password
+          Wachtwoord
           <input v-model="password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Logging in…' : 'Log in' }}
+          {{ authLoading ? 'Bezig met inloggen…' : 'Inloggen' }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Don't have an account? <router-link to="/register">Sign up</router-link>
+        Nog geen account? <router-link to="/register">Registreren</router-link>
       </p>
     </div>
   </div>
