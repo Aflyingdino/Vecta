@@ -69,13 +69,13 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL || '/'),
   routes,
   scrollBehavior: () => ({ top: 0 }),
 })
 
 /* ── Navigation guard ── */
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   
   if (requiresAuth && !isLoggedIn.value) {
