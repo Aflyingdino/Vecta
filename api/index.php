@@ -89,6 +89,8 @@ function defineRoutes(): array
         route('PATCH', '/tasks/{id}', static fn(array $p) => handleUpdateTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}', static fn(array $p) => handleDeleteTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/move', static fn(array $p) => handleMoveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/archive', static fn(array $p) => handleArchiveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/schedule', static fn(array $p) => handleScheduleTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}/schedule', static fn(array $p) => handleUnscheduleTask((int) $p['id'])),
 

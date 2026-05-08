@@ -182,17 +182,21 @@ function fetchFullProject(int $projectId, string $role): array
             'notes'            => $taskNoteMap[$tid] ?? [],
             'attachments'      => [],
             'comments'         => $taskCommentMap[$tid] ?? [],
+            'archivedAt'       => $r['archived_at'] ?? null,
             'createdAt'        => $r['created_at'],
         ];
     };
 
     // Partition tasks by group
     $tasksByGroup = [];
+    $archivedTasksByGroup = [];
     $backlog = [];
     foreach ($taskRows as $tr) {
         $task = $buildTask($tr);
         if ($tr['group_id'] === null) {
             $backlog[] = $task;
+        } elseif (($tr['archived_at'] ?? null) !== null) {
+            $archivedTasksByGroup[(int)$tr['group_id']][] = $task;
         } else {
             $tasksByGroup[(int)$tr['group_id']][] = $task;
         }
@@ -216,6 +220,7 @@ function fetchFullProject(int $projectId, string $role): array
             'gridRow'     => (int) $gr['grid_row'],
             'gridCol'     => (int) $gr['grid_col'],
             'tasks'       => $tasksByGroup[$gid] ?? [],
+            'archivedTasks' => $archivedTasksByGroup[$gid] ?? [],
         ];
         if ($gr['archived_at'] !== null) {
             $group['archivedAt'] = $gr['archived_at'];

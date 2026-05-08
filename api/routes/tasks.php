@@ -180,6 +180,32 @@ function handleMoveTask(int $taskId): never
     jsonResponse(buildTaskResponse($taskId));
 }
 
+function handleArchiveTask(int $taskId): never
+{
+    $uid  = requireAuth();
+    $task = resolveTask($taskId, $uid);
+
+    db()->prepare('UPDATE tasks SET archived_at = NOW() WHERE task_id = ?')
+        ->execute([$taskId]);
+
+    logActivity((int)$task['project_id'], $uid, 'task_archived', "Task \"{$task['title']}\" archived");
+
+    jsonResponse(buildTaskResponse($taskId));
+}
+
+function handleRestoreTask(int $taskId): never
+{
+    $uid  = requireAuth();
+    $task = resolveTask($taskId, $uid);
+
+    db()->prepare('UPDATE tasks SET archived_at = NULL WHERE task_id = ?')
+        ->execute([$taskId]);
+
+    logActivity((int)$task['project_id'], $uid, 'task_restored', "Task \"{$task['title']}\" restored");
+
+    jsonResponse(buildTaskResponse($taskId));
+}
+
 function handleScheduleTask(int $taskId): never
 {
     $uid  = requireAuth();
@@ -332,6 +358,7 @@ function buildTaskResponse(int $taskId): array
         'notes'            => $notes,
         'attachments'      => [],
         'comments'         => $comments,
+        'archivedAt'       => $t['archived_at'] ?? null,
         'createdAt'        => $t['created_at'],
     ];
 }

@@ -12,10 +12,13 @@ function handleRegister(): never
     $email = normalizeEmail($data['email']);
     $pass  = $data['password'];
 
+    if ($name === null || $name === '') jsonError('Name is required', 422);
+
     validateUsername($name);
 
     if (!validEmail($email)) jsonError('Invalid email address', 422);
-    if (!validPassword($pass)) jsonError('Password is required', 422);
+    $passwordError = passwordValidationError($pass);
+    if ($passwordError !== null) jsonError($passwordError, 422);
 
     enforceRateLimit('register-email:' . sha1($email), RATE_LIMIT_AUTH, RATE_LIMIT_AUTH_WINDOW);
 
@@ -54,6 +57,11 @@ function handleLogin(): never
 
     $email = normalizeEmail($data['email']);
     $pass  = $data['password'];
+
+    if (!validEmail($email) || trim((string) $pass) === '') {
+        securityLog('login_failed_format', ['emailHash' => sha1($email)]);
+        jsonError('Invalid email or password', 401);
+    }
 
     enforceRateLimit('login-email:' . sha1($email), RATE_LIMIT_AUTH, RATE_LIMIT_AUTH_WINDOW);
 
