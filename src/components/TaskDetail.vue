@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
 import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
-import { findTask, addComment, deleteTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
+import { findTask, addComment, deleteTask, archiveTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import ColorPicker from './ColorPicker.vue'
@@ -137,6 +137,11 @@ function handleDelete() {
   closeTaskDetail()
 }
 
+function handleArchive() {
+  archiveTask(task.value.id)
+  closeTaskDetail()
+}
+
 /* ── Attachments ──────────────────────────── */
 const fileInput = ref(null)
 
@@ -241,6 +246,12 @@ function fileIcon(mimeType) {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
                 </svg>
                 Bewerken
+              </button>
+              <button class="hdr-btn" @click="handleArchive" title="Taak archiveren">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Archiveren
               </button>
               <button class="hdr-btn hdr-btn--danger" @click="handleDelete">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

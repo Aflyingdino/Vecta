@@ -553,20 +553,20 @@ export async function deleteLabel(labelId) {
     for (const task of all) {
       if (task.labelIds && Array.isArray(task.labelIds)) {
         const originalLabelIds = [...task.labelIds]
-        task.labelIds = task.labelIds.filter((id) => id !== labelId)
-        if (originalLabelIds.length !== task.labelIds.length) {
-          taskLabelUpdates.push({ task, originalLabelIds })
-        }
+      }
+
+    export async function deleteArchivedTask(taskId) {
+      const board = b(); if (!board) return
+      if (!board.archivedTasks) return
+  
+      const idx = board.archivedTasks.findIndex((t) => t.id === taskId)
+      if (idx !== -1) {
+        const task = board.archivedTasks[idx]
+        board.archivedTasks.splice(idx, 1)
+        logActivity(board.id, 'task_deleted', `${actor()} permanently deleted task "${task.text}"`)
+        await api.delete(`/tasks/${taskId}`)
       }
     }
-    
-    await api.delete(`/labels/${labelId}`)
-  } catch (err) {
-    console.error('Failed to delete label:', err)
-    board.labels.splice(idx, 0, removedLabel)
-    // Rollback task label updates
-    for (const { task, originalLabelIds } of taskLabelUpdates) {
-      task.labelIds = originalLabelIds
     }
     throw err
   }
@@ -606,3 +606,5 @@ export async function moveTaskToBacklog(taskId) {
     }
   }
 }
+
+export const archivedTasks  = computed(() => b()?.archivedTasks ?? [])
