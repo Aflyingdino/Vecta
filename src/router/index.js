@@ -12,6 +12,7 @@ const BoardPage      = () => import('@/pages/BoardPage.vue')
 const DashboardPage  = () => import('@/pages/DashboardPage.vue')
 const ActivityPage   = () => import('@/pages/ActivityPage.vue')
 const CalendarPage   = () => import('@/pages/CalendarPage.vue')
+const AccountPage    = () => import('@/pages/AccountPage.vue')
 const PublicBoardPage = () => import('@/pages/PublicBoardPage.vue')
 const ProjectDashboardPage = () => import('@/pages/ProjectDashboardPage.vue')
 
@@ -61,6 +62,12 @@ const routes = [
     path: '/calendar',
     name: 'calendar',
     component: CalendarPage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/account',
+    name: 'account',
+    component: AccountPage,
     meta: { requiresAuth: true },
   },
 

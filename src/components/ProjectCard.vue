@@ -148,7 +148,8 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
 }
 .card-role--owner { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; }
 .card-role--admin  { background: color-mix(in srgb, #5b5bd6 15%, transparent); color: #5b5bd6; }
-.card-role--user   { background: var(--color-surface-3); color: var(--color-text-2); }
+.card-role--user,
+.card-role--collaborator { background: var(--color-surface-3); color: var(--color-text-2); }
 
 .card-delete {
   flex-shrink: 0;

@@ -14,6 +14,10 @@ function handleAddMember(int $projectId): never
     $email = normalizeEmail($data['email']);
     $role  = requireEnumValue($data['role'] ?? 'collaborator', ['admin', 'collaborator'], 'role');
 
+    if ($role === 'admin' && !currentUserRolesEnabled($uid)) {
+        jsonError('Roles are not available on your plan', 403);
+    }
+
     // Only owner can add admins
     if ($role === 'admin') {
         requireProjectOwner($projectId, $uid);
@@ -22,7 +26,7 @@ function handleAddMember(int $projectId): never
     $db = db();
 
     // Find user by email
-    $stmt = $db->prepare('SELECT user_id, name, email FROM users WHERE email = ?');
+    $stmt = $db->prepare('SELECT user_id, name, email, subscription_plan FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $target = $stmt->fetch();
     if (!$target) jsonError('No user found with that email', 404);
@@ -43,6 +47,7 @@ function handleAddMember(int $projectId): never
         'name'   => $target['name'],
         'email'  => $target['email'],
         'avatar' => null,
+        'subscriptionPlan' => subscriptionPlanKey($target['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'role'   => $role,
     ], 201);
 }
@@ -55,6 +60,10 @@ function handleUpdateMemberRole(int $projectId, int $targetUserId): never
     requireFields($data, ['role']);
 
     $newRole = requireEnumValue($data['role'], ['admin', 'collaborator'], 'role');
+
+    if (!currentUserRolesEnabled($uid)) {
+        jsonError('Roles are not available on your plan', 403);
+    }
 
     // Only owner can promote to admin or change roles
     requireProjectOwner($projectId, $uid);

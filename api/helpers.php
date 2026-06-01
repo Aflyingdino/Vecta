@@ -260,6 +260,36 @@ function validColor(?string $color): bool
     return (bool) preg_match('/^#[0-9a-fA-F]{6}$/', $color);
 }
 
+function subscriptionPlanKey(?string $plan): string
+{
+    $key = strtolower(trim((string) $plan));
+    return array_key_exists($key, SUBSCRIPTION_PLANS) ? $key : DEFAULT_SUBSCRIPTION_PLAN;
+}
+
+function subscriptionPlanMeta(?string $plan): array
+{
+    return SUBSCRIPTION_PLANS[subscriptionPlanKey($plan)];
+}
+
+function validSubscriptionPlan(?string $plan): bool
+{
+    $key = strtolower(trim((string) $plan));
+    return $key !== '' && array_key_exists($key, SUBSCRIPTION_PLANS);
+}
+
+function currentUserSubscriptionPlan(int $userId): string
+{
+    $stmt = db()->prepare('SELECT subscription_plan FROM users WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return subscriptionPlanKey($row['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN);
+}
+
+function currentUserRolesEnabled(int $userId): bool
+{
+    return (bool) (subscriptionPlanMeta(currentUserSubscriptionPlan($userId))['rolesEnabled'] ?? false);
+}
+
 function validDateString(?string $value): bool
 {
     if ($value === null || $value === '') return true;

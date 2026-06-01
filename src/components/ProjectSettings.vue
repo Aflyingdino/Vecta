@@ -5,6 +5,8 @@ import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
 import { activeProject, addMember, removeMember, updateMemberRole } from '@/stores/projectStore'
 import ColorPicker from './ColorPicker.vue'
+import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
+import { user } from '@/stores/authStore'
 
 /* ── Tab state ── */
 const activeTab = ref('labels') // 'labels' | 'members'
@@ -39,6 +41,7 @@ function saveEdit() {
 const memberEmail = ref('')
 const memberRole  = ref('collaborator')
 const memberError = ref('')
+const rolesEnabled = computed(() => canUseRoles(user.subscriptionPlan))
 
 async function inviteMember() {
   memberError.value = ''
@@ -48,7 +51,7 @@ async function inviteMember() {
   if (!p) return
   if (p.members.find(m => m.email === email)) { memberError.value = 'Deze gebruiker is al lid.'; return }
   try {
-    await addMember(p.id, email, memberRole.value)
+    await addMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
     memberEmail.value = ''
     memberRole.value  = 'collaborator'
   } catch (err) {
@@ -83,6 +86,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
 
           <div class="settings-header">
             <span class="settings-title">Projectinstellingen</span>
+            <span v-if="activeProject" class="project-plan-chip">{{ getPlanLabel(user.subscriptionPlan) }}</span>
             <button
               v-if="activeProject"
               class="settings-mute-btn"
@@ -211,12 +215,13 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                     placeholder="collega@voorbeeld.nl"
                     @keydown.enter="inviteMember"
                   />
-                  <select v-model="memberRole" class="role-select">
+                  <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
                     <option value="admin">Admin</option>
-                    <option value="user">Lid</option>
+                    <option value="collaborator">Lid</option>
                   </select>
                   <button class="btn-add" @click="inviteMember">Uitnodigen</button>
                 </div>
+                <p v-if="!rolesEnabled" class="member-note">Rollen zijn beschikbaar vanaf Premium+.</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>
               </div>
 
@@ -237,16 +242,18 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   <div class="member-info">
                     <span class="member-name">{{ m.name || m.email }}</span>
                     <span class="member-email">{{ m.email }}</span>
+                    <span class="member-plan">{{ getPlanLabel(m.subscriptionPlan) }}</span>
                   </div>
                   <select
                     class="role-select role-select--sm"
                     :value="m.role"
-                    :disabled="m.role === 'owner'"
+                    :disabled="m.role === 'owner' || !rolesEnabled"
                     @change="changeRole(m.id, $event.target.value)"
+                    v-if="rolesEnabled || m.role === 'owner'"
                   >
                     <option value="owner" :disabled="m.role !== 'owner'">Eigenaar</option>
                     <option value="admin">Admin</option>
-                    <option value="user">Lid</option>
+                    <option value="collaborator">Lid</option>
                   </select>
                   <button
                     v-if="m.role !== 'owner'"
@@ -303,6 +310,9 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-1);
+}
+.project-plan-chip {
+  margin-left: auto;
 }
 .close-btn {
   display: flex;
@@ -492,6 +502,24 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 11px;
   color: var(--color-text-3);
   white-space: nowrap;
+.member-plan {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.member-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-3);
+}
   overflow: hidden;
   text-overflow: ellipsis;
 }

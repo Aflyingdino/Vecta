@@ -217,6 +217,19 @@ function handleScheduleTask(int $taskId): never
         ? requireBoundedInt($data['calendarDuration'], 'calendarDuration', 1, 10080)
         : null;
 
+    if ($start !== null) {
+        $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
+        $limitDays = $plan['limits']['planningWindowDays'] ?? null;
+        if ($limitDays !== null) {
+            $now = new DateTimeImmutable('now');
+            $scheduled = new DateTimeImmutable($start);
+            $max = $now->modify('+' . $limitDays . ' days');
+            if ($scheduled > $max) {
+                jsonError('Your plan does not allow planning that far ahead', 403);
+            }
+        }
+    }
+
     db()->prepare('UPDATE tasks SET scheduled_start = ?, duration_minutes = ? WHERE task_id = ?')
         ->execute([$start, $duration, $taskId]);
 

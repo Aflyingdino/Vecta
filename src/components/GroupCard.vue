@@ -14,7 +14,7 @@ const props = defineProps({
   group: { type: Object, required: true },
 })
 
-const emit = defineEmits(['openDetail', 'groupDragStart'])
+const emit = defineEmits(['openDetail', 'groupDragStart', 'groupDrop'])
 
 const isEditing       = ref(false)
 const editName        = ref('')
@@ -129,7 +129,11 @@ function onDragEnter(e) {
   }
 }
 function onDragOver(e) {
-  if (e.dataTransfer.types.includes('application/task-id')) e.preventDefault()
+  const types = e.dataTransfer.types
+  if (types.includes('application/task-id') || types.includes('application/group-id')) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
 }
 function onDragLeave(e) {
   if (e.dataTransfer.types.includes('application/task-id')) {
@@ -139,12 +143,24 @@ function onDragLeave(e) {
 }
 function onDrop(e) {
   dragCounter.value = 0; isDragOver.value = false
+  const types = e.dataTransfer.types
+  if (types.includes('application/group-id')) {
+    e.preventDefault()
+    e.stopPropagation()
+    emit('groupDrop', props.group.id)
+    return
+  }
   const taskId = Number(e.dataTransfer.getData('application/task-id'))
   if (taskId) { moveTaskToGroup(taskId, props.group.id); e.stopPropagation() }
 }
 function onGroupDragStart(e) {
   e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('application/group-id', String(props.group.id))
+  const gid = String(props.group.id)
+  e.dataTransfer.setData('application/group-id', gid)
+  e.dataTransfer.setData('groupId', gid)
+  try {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ groupId: Number(gid) }))
+  } catch {}
   emit('groupDragStart', props.group.id)
 }
 function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) }

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { projectLabels } from '@/stores/boardStore'
+import { activeProject } from '@/stores/projectStore'
 import { openEditTask, openTaskDetail } from '@/stores/uiStore'
 import { STATUS_META } from '@/utils/constants'
 import { formatShortDate } from '@/utils/dates'
@@ -38,7 +39,16 @@ const isOverdue = computed(() => {
 
 function onDragStart(e) {
   e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('application/task-id', String(e.currentTarget.dataset.taskId))
+  const taskId = String(e.currentTarget.dataset.taskId)
+  const projectId = String(activeProject?.value?.id ?? '')
+  // Provide both a custom mime type and standard keys/text payloads so
+  // different drop targets can read the payload consistently.
+  e.dataTransfer.setData('application/task-id', taskId)
+  e.dataTransfer.setData('taskId', taskId)
+  e.dataTransfer.setData('projectId', projectId)
+  try {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ taskId: Number(taskId), projectId: Number(projectId) }))
+  } catch {}
   e.currentTarget.classList.add('dragging')
 }
 

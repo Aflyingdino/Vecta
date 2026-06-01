@@ -542,31 +542,31 @@ export async function deleteLabel(labelId) {
   const board = b(); if (!board) return
   const idx = board.labels.findIndex((l) => l.id === labelId)
   if (idx === -1) return
-  
+
   const removedLabel = board.labels[idx]
   const taskLabelUpdates = []
-  
+
   try {
     board.labels.splice(idx, 1)
-    
+
     const all = [...board.backlog, ...board.groups.flatMap((g) => g.tasks)]
     for (const task of all) {
       if (task.labelIds && Array.isArray(task.labelIds)) {
         const originalLabelIds = [...task.labelIds]
-      }
-
-    export async function deleteArchivedTask(taskId) {
-      const board = b(); if (!board) return
-      if (!board.archivedTasks) return
-  
-      const idx = board.archivedTasks.findIndex((t) => t.id === taskId)
-      if (idx !== -1) {
-        const task = board.archivedTasks[idx]
-        board.archivedTasks.splice(idx, 1)
-        logActivity(board.id, 'task_deleted', `${actor()} permanently deleted task "${task.text}"`)
-        await api.delete(`/tasks/${taskId}`)
+        task.labelIds = task.labelIds.filter((id) => id !== labelId)
+        if (originalLabelIds.length !== task.labelIds.length) {
+          taskLabelUpdates.push({ task, originalLabelIds })
+        }
       }
     }
+
+    await api.delete(`/labels/${labelId}`)
+  } catch (err) {
+    console.error('Failed to delete label:', err)
+    board.labels.splice(idx, 0, removedLabel)
+    // Rollback task label updates
+    for (const { task, originalLabelIds } of taskLabelUpdates) {
+      task.labelIds = originalLabelIds
     }
     throw err
   }

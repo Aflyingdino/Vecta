@@ -130,6 +130,14 @@ function onCellDrop(cell) {
   draggingId.value = null
   overCell.value = null
 }
+function onGroupDrop(targetGroupId) {
+  if (!draggingId.value || draggingId.value === targetGroupId) return
+  const targetGroup = groups.value.find(g => g.id === targetGroupId)
+  if (!targetGroup) return
+  moveGroupToGrid(draggingId.value, targetGroup.gridRow ?? 0, targetGroup.gridCol ?? 0)
+  draggingId.value = null
+  overCell.value = null
+}
 function onDragEnd() {
   draggingId.value = null
   overCell.value = null
@@ -223,6 +231,7 @@ function onDragEnd() {
               :group="cell.group"
               @openDetail="openGroupDetail"
               @groupDragStart="draggingId = $event"
+              @groupDrop="onGroupDrop"
             />
             <!-- Ghost placeholder: shown on every valid empty cell while dragging -->
             <div

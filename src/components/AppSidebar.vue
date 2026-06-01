@@ -5,6 +5,7 @@ import { projects, activeProjectId } from '@/stores/projectStore'
 import { isLoggedIn, user, logout } from '@/stores/authStore'
 import { readString, writeString } from '@/utils/safeStorage'
 import { openSettings } from '@/stores/uiStore'
+import { getPlanLabel } from '@/utils/subscriptionPlans'
 
 const router = useRouter()
 const route = useRoute()
@@ -91,12 +92,17 @@ const userInitials = computed(() => {
         </svg>
         <!-- Dashboard icon -->
         <svg v-if="link.icon === 'dashboard'" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-9v9m3-12v12M3 12l18-9-9 18 9-9-18-9z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 10.5V20h14v-9.5" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 20v-5h4v5" />
         </svg>
         <!-- Calendar icon -->
         <svg v-if="link.icon === 'calendar'" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+        <svg v-if="link.icon === 'account'" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 20a8 8 0 0116 0" />
         </svg>
         <span v-if="!collapsed">{{ link.label }}</span>
       </router-link>
@@ -122,11 +128,14 @@ const userInitials = computed(() => {
     <!-- Bottom: user -->
     <div class="sidebar-bottom">
       <div class="user-row" :class="{ 'user-row--collapsed': collapsed }">
-        <div class="user-avatar">{{ userInitials }}</div>
-        <div class="user-info" v-if="!collapsed">
-          <p class="user-name">{{ user.name }}</p>
-          <p class="user-email">{{ user.email }}</p>
-        </div>
+        <router-link to="/account" class="user-link" :title="collapsed ? 'Account' : 'Open account'">
+          <div class="user-avatar">{{ userInitials }}</div>
+          <div class="user-info" v-if="!collapsed">
+            <p class="user-name">{{ user.name }}</p>
+            <p class="user-email">{{ user.email }}</p>
+            <span class="user-plan">{{ getPlanLabel(user.subscriptionPlan) }}</span>
+          </div>
+        </router-link>
         <button v-if="!collapsed" class="settings-btn" @click="openSettings" title="Instellingen">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 10-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 10-3 0m-9.75 0h9.75" />
@@ -280,6 +289,15 @@ const userInitials = computed(() => {
   min-width: 0;
 }
 .user-row--collapsed { padding: 6px 0; justify-content: center; }
+.user-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
 .user-avatar {
   width: 30px;
   height: 30px;
@@ -311,6 +329,19 @@ const userInitials = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.user-plan {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 .logout-btn {
   flex-shrink: 0;

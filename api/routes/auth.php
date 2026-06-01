@@ -31,8 +31,10 @@ function handleRegister(): never
 
     $hash = password_hash($pass, PASSWORD_DEFAULT);
 
-    $stmt = $db->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
-    $stmt->execute([$name, $email, $hash]);
+    $plan = DEFAULT_SUBSCRIPTION_PLAN;
+
+    $stmt = $db->prepare('INSERT INTO users (name, email, password_hash, subscription_plan) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$name, $email, $hash, $plan]);
     $uid = (int) $db->lastInsertId();
 
     session_regenerate_id(true);
@@ -46,6 +48,7 @@ function handleRegister(): never
         'id'    => $uid,
         'name'  => $name,
         'email' => $email,
+        'subscriptionPlan' => $plan,
         'csrfToken' => csrfToken(),
     ], 201);
 }
@@ -65,7 +68,7 @@ function handleLogin(): never
 
     enforceRateLimit('login-email:' . sha1($email), RATE_LIMIT_AUTH, RATE_LIMIT_AUTH_WINDOW);
 
-    $stmt = db()->prepare('SELECT user_id, name, email, password_hash FROM users WHERE email = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, password_hash, subscription_plan FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
@@ -91,6 +94,7 @@ function handleLogin(): never
         'id'    => (int) $user['user_id'],
         'name'  => $user['name'],
         'email' => $user['email'],
+        'subscriptionPlan' => subscriptionPlanKey($user['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'csrfToken' => csrfToken(),
     ]);
 }
@@ -108,7 +112,7 @@ function handleMe(): never
     $uid = currentUserId();
     if (!$uid) jsonError('Not authenticated', 401);
 
-    $stmt = db()->prepare('SELECT user_id, name, email, created_at FROM users WHERE user_id = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, created_at, subscription_plan FROM users WHERE user_id = ?');
     $stmt->execute([$uid]);
     $user = $stmt->fetch();
 
@@ -122,6 +126,35 @@ function handleMe(): never
         'id'        => (int) $user['user_id'],
         'name'      => $user['name'],
         'email'     => $user['email'],
+        'subscriptionPlan' => subscriptionPlanKey($user['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
+        'createdAt' => $user['created_at'],
+    ]);
+}
+
+function handleUpdateSubscription(): never
+{
+    $uid = requireAuth();
+    $data = jsonBody();
+    requireFields($data, ['subscriptionPlan']);
+
+    if (!validSubscriptionPlan($data['subscriptionPlan'])) {
+        jsonError('Invalid subscription plan', 422);
+    }
+
+    $plan = subscriptionPlanKey($data['subscriptionPlan']);
+
+    db()->prepare('UPDATE users SET subscription_plan = ?, subscription_updated_at = NOW() WHERE user_id = ?')
+        ->execute([$plan, $uid]);
+
+    $stmt = db()->prepare('SELECT user_id, name, email, created_at, subscription_plan FROM users WHERE user_id = ?');
+    $stmt->execute([$uid]);
+    $user = $stmt->fetch();
+
+    jsonResponse([
+        'id' => (int) $user['user_id'],
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'subscriptionPlan' => subscriptionPlanKey($user['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'createdAt' => $user['created_at'],
     ]);
 }

@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
-import { login, authLoading, authError, clearAuthError } from '@/stores/authStore'
+import { login, loginLocalDemo, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
 
 const router = useRouter()
@@ -10,6 +10,7 @@ const route = useRoute()
 const email = ref('')
 const password = ref('')
 const localError = ref('')
+const demoLoginAvailable = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
 function validateLoginForm() {
   const trimmedEmail = email.value.trim().toLowerCase()
@@ -42,6 +43,24 @@ async function handleLogin() {
     // authError is already set by login()
   }
 }
+
+async function handleDemoLogin() {
+  clearAuthError()
+  localError.value = ''
+
+  try {
+    await loginLocalDemo()
+    try {
+      await fetchProjects()
+    } catch (err) {
+      console.warn('Failed to fetch projects for demo login, continuing anyway:', err)
+    }
+    const redirect = route.query.redirect || '/dashboard'
+    await router.push(redirect)
+  } catch (err) {
+    console.error('Demo login failed:', err)
+  }
+}
 </script>
 
 <template>
@@ -70,6 +89,21 @@ async function handleLogin() {
           {{ authLoading ? 'Bezig met inloggen…' : 'Inloggen' }}
         </button>
       </form>
+
+      <button
+        v-if="demoLoginAvailable"
+        type="button"
+        class="btn-demo"
+        :disabled="authLoading"
+        @click="handleDemoLogin"
+      >
+        <span v-if="authLoading" class="spinner spinner--dark"></span>
+        {{ authLoading ? 'Demo starten…' : 'Doorgaan zonder account' }}
+      </button>
+
+      <p v-if="demoLoginAvailable" class="auth-demo-note">
+        Alleen zichtbaar in lokale ontwikkeling. Maakt automatisch een tijdelijke demo-account aan.
+      </p>
 
       <p class="auth-switch">
         Nog geen account? <router-link to="/register">Registreren</router-link>
@@ -163,6 +197,27 @@ async function handleLogin() {
 }
 .btn-submit:hover { background: var(--color-accent-hover); }
 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-demo:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-2));
+}
+.btn-demo:disabled { opacity: 0.6; cursor: not-allowed; }
 .spinner {
   width: 14px;
   height: 14px;
@@ -171,7 +226,9 @@ async function handleLogin() {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+.spinner--dark { border-color: color-mix(in srgb, var(--color-text-1) 25%, transparent); border-top-color: var(--color-text-1); }
 @keyframes spin { to { transform: rotate(360deg); } }
+.auth-demo-note { font-size: 12px; color: var(--color-text-3); text-align: center; line-height: 1.4; margin-top: -2px; }
 .auth-switch { font-size: 13px; color: var(--color-text-2); text-align: center; }
 .auth-switch a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
 .auth-switch a:hover { text-decoration: underline; }
