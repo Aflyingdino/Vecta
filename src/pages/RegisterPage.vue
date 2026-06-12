@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
@@ -16,8 +16,6 @@ const selectedPlan = ref('free')
 const planPickerOpen = ref(false)
 const localError = ref('')
 
-<<<<<<< Updated upstream
-=======
 const passwordChecks = computed(() => ({
   minLength: password.value.length >= 10,
   hasLower: /[a-z]/.test(password.value),
@@ -51,21 +49,17 @@ function choosePlan(planKey) {
   closePlanPicker()
 }
 
->>>>>>> Stashed changes
 async function handleRegister() {
   clearAuthError()
   localError.value = ''
-  if (password.value !== confirm.value) {
-    localError.value = 'Passwords do not match'
+
+  const validationError = validateRegisterForm()
+  if (validationError) {
+    localError.value = validationError
     return
   }
+
   try {
-<<<<<<< Updated upstream
-    await register({ name: name.value, email: email.value, password: password.value })
-    await fetchProjects()
-    router.push({ name: 'projects' })
-  } catch (_) { /* error shown via authError */ }
-=======
     await register({
       name: name.value.trim(),
       email: email.value.trim().toLowerCase(),
@@ -82,7 +76,6 @@ async function handleRegister() {
     console.error('Registration failed:', err)
     // authError is already set by register()
   }
->>>>>>> Stashed changes
 }
 
 const displayError = () => localError.value || authError.value
@@ -95,13 +88,8 @@ const displayError = () => localError.value || authError.value
         <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
         <span>TaskPilot</span>
       </router-link>
-<<<<<<< Updated upstream
-      <h1 class="auth-title">Create account</h1>
-      <p class="auth-sub">Free forever, no credit card needed</p>
-=======
       <h1 class="auth-title">Account aanmaken</h1>
       <p class="auth-sub">Kies direct je abonnement of ga gratis verder, zonder creditcard</p>
->>>>>>> Stashed changes
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
@@ -222,8 +210,6 @@ const displayError = () => localError.value || authError.value
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
-<<<<<<< Updated upstream
-=======
 .plan-section { display: flex; flex-direction: column; gap: 8px; }
 .plan-label { margin-bottom: 2px; }
 .plan-picker-btn {
@@ -256,7 +242,6 @@ const displayError = () => localError.value || authError.value
 .rule-ok {
   color: #46a758;
 }
->>>>>>> Stashed changes
 .form-label {
   display: flex;
   flex-direction: column;
@@ -328,42 +313,20 @@ const displayError = () => localError.value || authError.value
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
 }
 .plan-modal__header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  align-items: start;
-}
-.plan-modal__header h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--color-text-1);
-}
-.plan-modal__header p {
-  font-size: 13px;
-  color: var(--color-text-3);
-  margin-top: 4px;
-}
-.plan-modal__close {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
-  color: var(--color-text-2);
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
 }
 .plan-modal__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  padding: 20px;
 }
 .plan-choice {
   text-align: left;
@@ -390,6 +353,7 @@ const displayError = () => localError.value || authError.value
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding: 20px;
 }
 .btn-secondary {
   border: 1px solid var(--color-border);

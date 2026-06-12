@@ -58,8 +58,6 @@ define('DB_USER', envValue('DB_USER', 'vecta'));
 define('DB_PASS', envValue('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
 
-<<<<<<< Updated upstream
-=======
 define('DEFAULT_SUBSCRIPTION_PLAN', 'free');
 define('SUBSCRIPTION_PLANS', [
     'free' => [
@@ -124,7 +122,6 @@ define('SUBSCRIPTION_PLANS', [
     ],
 ]);
 
->>>>>>> Stashed changes
 if (APP_ENV === 'production') {
     requireEnv('APP_URL');
     requireEnv('ALLOWED_ORIGINS');

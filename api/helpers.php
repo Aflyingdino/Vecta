@@ -235,8 +235,6 @@ function validColor(?string $color): bool
     return (bool) preg_match('/^#[0-9a-fA-F]{6}$/', $color);
 }
 
-<<<<<<< Updated upstream
-=======
 function subscriptionPlanKey(?string $plan): string
 {
     $key = strtolower(trim((string) $plan));
@@ -329,7 +327,6 @@ function currentUserRolesEnabled(int $userId): bool
     return (bool) (subscriptionPlanMeta(currentUserSubscriptionPlan($userId))['rolesEnabled'] ?? false);
 }
 
->>>>>>> Stashed changes
 function validDateString(?string $value): bool
 {
     if ($value === null || $value === '') return true;

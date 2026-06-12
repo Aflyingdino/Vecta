@@ -33,23 +33,19 @@ function handleRegister(): never
     if ($stmt->fetch()) jsonError('Email already in use', 409);
 
     $hash = password_hash($pass, PASSWORD_DEFAULT);
-
-<<<<<<< Updated upstream
-    $stmt = $db->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
-    $stmt->execute([$name, $email, $hash]);
-=======
     $stmt = $db->prepare('INSERT INTO users (name, email, password_hash, subscription_plan) VALUES (?, ?, ?, ?)');
     $stmt->execute([$name, $email, $hash, $plan]);
->>>>>>> Stashed changes
     $uid = (int) $db->lastInsertId();
 
+    $subscriptionStartedAt = null;
+    $subscriptionExpiresAt = null;
     if ($plan !== 'free') {
-        $startedAt = date('Y-m-d H:i:s');
-        $expiresAt = subscriptionPlanExpirationFrom($plan);
+        $subscriptionStartedAt = date('Y-m-d H:i:s');
+        $subscriptionExpiresAt = subscriptionPlanExpirationFrom($plan);
         db()->prepare('UPDATE users SET subscription_started_at = ?, subscription_expires_at = ?, subscription_updated_at = NOW() WHERE user_id = ?')
-            ->execute([$startedAt, $expiresAt, $uid]);
+            ->execute([$subscriptionStartedAt, $subscriptionExpiresAt, $uid]);
         db()->prepare('INSERT INTO subscription_plan_events (user_id, from_plan, to_plan, event_type, started_at, expires_at, applied_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
-            ->execute([$uid, 'free', $plan, 'activate', $startedAt, $expiresAt]);
+            ->execute([$uid, 'free', $plan, 'activate', $subscriptionStartedAt, $subscriptionExpiresAt]);
     }
 
     session_regenerate_id(true);
@@ -60,9 +56,15 @@ function handleRegister(): never
     securityLog('register_success', ['userId' => $uid]);
 
     jsonResponse([
-        'id'    => $uid,
-        'name'  => $name,
+        'id' => $uid,
+        'name' => $name,
         'email' => $email,
+        'subscriptionPlan' => subscriptionPlanKey($plan),
+        'subscriptionStartedAt' => $subscriptionStartedAt,
+        'subscriptionExpiresAt' => $subscriptionExpiresAt,
+        'subscriptionNextPlan' => null,
+        'subscriptionNextStartsAt' => null,
+        'subscriptionNextExpiresAt' => null,
         'csrfToken' => csrfToken(),
     ], 201);
 }
@@ -105,15 +107,12 @@ function handleLogin(): never
         'id'    => (int) $user['user_id'],
         'name'  => $user['name'],
         'email' => $user['email'],
-<<<<<<< Updated upstream
-=======
         'subscriptionPlan' => subscriptionPlanKey($user['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'subscriptionStartedAt' => $user['subscription_started_at'] ?? null,
         'subscriptionExpiresAt' => $user['subscription_expires_at'] ?? null,
         'subscriptionNextPlan' => $user['subscription_next_plan'] ?? null,
         'subscriptionNextStartsAt' => $user['subscription_next_starts_at'] ?? null,
         'subscriptionNextExpiresAt' => $user['subscription_next_expires_at'] ?? null,
->>>>>>> Stashed changes
         'csrfToken' => csrfToken(),
     ]);
 }
@@ -131,13 +130,7 @@ function handleMe(): never
     $uid = currentUserId();
     if (!$uid) jsonError('Not authenticated', 401);
 
-<<<<<<< Updated upstream
-    $stmt = db()->prepare('SELECT user_id, name, email, created_at FROM users WHERE user_id = ?');
-    $stmt->execute([$uid]);
-    $user = $stmt->fetch();
-=======
     $user = refreshUserSubscriptionState($uid);
->>>>>>> Stashed changes
 
     if (!$user) {
         // Session references a deleted user
@@ -146,11 +139,9 @@ function handleMe(): never
     }
 
     jsonResponse([
-        'id'        => (int) $user['user_id'],
-        'name'      => $user['name'],
-        'email'     => $user['email'],
-<<<<<<< Updated upstream
-=======
+        'id' => (int) $user['user_id'],
+        'name' => $user['name'],
+        'email' => $user['email'],
         'subscriptionPlan' => subscriptionPlanKey($user['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'subscriptionStartedAt' => $user['subscription_started_at'] ?? null,
         'subscriptionExpiresAt' => $user['subscription_expires_at'] ?? null,
@@ -225,7 +216,6 @@ function handleUpdateSubscription(): never
         'subscriptionNextPlan' => $user['subscription_next_plan'] ?? null,
         'subscriptionNextStartsAt' => $user['subscription_next_starts_at'] ?? null,
         'subscriptionNextExpiresAt' => $user['subscription_next_expires_at'] ?? null,
->>>>>>> Stashed changes
         'createdAt' => $user['created_at'],
     ]);
 }
