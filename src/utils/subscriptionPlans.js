@@ -6,6 +6,7 @@ const PLAN_LIST = [
     price: '0.00 dabloons p/maand',
     priceShort: '0.00 dabloons',
     rolesEnabled: false,
+    durationDays: null,
     limits: {
       projects: 1,
       groups: 5,
@@ -29,6 +30,7 @@ const PLAN_LIST = [
     price: '100 dabloons p/maand',
     priceShort: '100 dabloons',
     rolesEnabled: false,
+    durationDays: 30,
     limits: {
       projects: 2,
       groups: 10,
@@ -52,6 +54,7 @@ const PLAN_LIST = [
     price: '250 dabloons p/maand',
     priceShort: '250 dabloons',
     rolesEnabled: false,
+    durationDays: 30,
     limits: {
       projects: 5,
       groups: 15,
@@ -75,6 +78,7 @@ const PLAN_LIST = [
     price: '500 dabloons p/maand',
     priceShort: '500 dabloons',
     rolesEnabled: true,
+    durationDays: 30,
     limits: {
       projects: 10,
       groups: 20,
@@ -98,6 +102,7 @@ const PLAN_LIST = [
     price: '500 dabloons p/user',
     priceShort: '500 dabloons p/user',
     rolesEnabled: true,
+    durationDays: 30,
     limits: {
       projects: Infinity,
       groups: Infinity,

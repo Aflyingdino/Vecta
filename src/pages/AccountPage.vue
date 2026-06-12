@@ -8,6 +8,21 @@ const plans = getPlanList()
 const localError = ref('')
 
 const currentPlan = computed(() => plans.find((plan) => plan.key === user.subscriptionPlan) || plans[0])
+const nextPlan = computed(() => plans.find((plan) => plan.key === user.subscriptionNextPlan) || null)
+
+function formatDateTime(value) {
+  if (!value) return 'Geen datum'
+  return new Intl.DateTimeFormat('nl-NL', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function planActionLabel(planKey) {
+  if (planKey === user.subscriptionPlan) return 'Huidig plan'
+  if (!user.subscriptionExpiresAt || user.subscriptionPlan === 'free') return 'Direct starten'
+  return 'Inplannen na afloop'
+}
 
 async function choosePlan(planKey) {
   localError.value = ''
@@ -47,6 +62,20 @@ async function choosePlan(planKey) {
           </div>
           <div class="plan-pill">{{ canUseRoles(user.subscriptionPlan) ? 'Rollen aan' : 'Geen rollen' }}</div>
         </div>
+        <div class="plan-status">
+          <div>
+            <p class="plan-status__label">Startdatum</p>
+            <p class="plan-status__value">{{ formatDateTime(user.subscriptionStartedAt) }}</p>
+          </div>
+          <div>
+            <p class="plan-status__label">Verloopt op</p>
+            <p class="plan-status__value">{{ formatDateTime(user.subscriptionExpiresAt) }}</p>
+          </div>
+          <div v-if="nextPlan">
+            <p class="plan-status__label">Volgend plan</p>
+            <p class="plan-status__value">{{ nextPlan.name }} vanaf {{ formatDateTime(user.subscriptionNextStartsAt) }}</p>
+          </div>
+        </div>
         <div class="plan-limits">
           <div v-for="feature in currentPlan.features" :key="feature" class="plan-feature">{{ feature }}</div>
         </div>
@@ -73,7 +102,7 @@ async function choosePlan(planKey) {
             <div v-for="feature in plan.features" :key="feature" class="plan-card__feature">{{ feature }}</div>
           </div>
           <div class="plan-card__footer">
-            <span>{{ plan.rolesEnabled ? 'Rollen beschikbaar' : 'Geen rollen' }}</span>
+            <span>{{ planActionLabel(plan.key) }}</span>
             <span>{{ formatLimit(plan.limits.projects) }} projecten</span>
           </div>
         </button>
@@ -122,6 +151,17 @@ async function choosePlan(planKey) {
 .plan-header h2 { font-size: 20px; color: var(--color-text-1); margin-top: 3px; }
 .plan-price { font-size: 13px; color: var(--color-text-2); margin-top: 4px; }
 .plan-limits { display: flex; flex-wrap: wrap; gap: 8px; }
+.plan-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+}
+.plan-status__label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-3); font-weight: 700; }
+.plan-status__value { font-size: 13px; color: var(--color-text-1); margin-top: 4px; font-weight: 600; }
 .plan-feature, .plan-card__feature {
   padding: 7px 10px; border-radius: 10px;
   background: var(--color-surface-1); border: 1px solid var(--color-border);

@@ -226,32 +226,7 @@ function normalizeEmail(string $email): string
 
 function validPassword(string $password): bool
 {
-    return passwordValidationError($password) === null;
-}
-
-function passwordValidationError(string $password): ?string
-{
-    if (trim($password) === '') {
-        return 'Password is required';
-    }
-
-    if (mb_strlen($password) < PASSWORD_MIN_LENGTH) {
-        return 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters';
-    }
-
-    if (!preg_match('/[a-z]/', $password)) {
-        return 'Password must include at least one lowercase letter';
-    }
-
-    if (!preg_match('/[A-Z]/', $password)) {
-        return 'Password must include at least one uppercase letter';
-    }
-
-    if (!preg_match('/\d/', $password)) {
-        return 'Password must include at least one number';
-    }
-
-    return null;
+    return trim($password) !== '';
 }
 
 function validColor(?string $color): bool
@@ -271,6 +246,23 @@ function subscriptionPlanMeta(?string $plan): array
     return SUBSCRIPTION_PLANS[subscriptionPlanKey($plan)];
 }
 
+function subscriptionPlanDurationDays(?string $plan): ?int
+{
+    $durationDays = subscriptionPlanMeta($plan)['durationDays'] ?? null;
+    return is_int($durationDays) ? $durationDays : null;
+}
+
+function subscriptionPlanExpirationFrom(?string $plan, ?DateTimeInterface $from = null): ?string
+{
+    $durationDays = subscriptionPlanDurationDays($plan);
+    if ($durationDays === null) {
+        return null;
+    }
+
+    $base = $from ? DateTimeImmutable::createFromInterface($from) : new DateTimeImmutable('now');
+    return $base->modify('+' . $durationDays . ' days')->format('Y-m-d H:i:s');
+}
+
 function validSubscriptionPlan(?string $plan): bool
 {
     $key = strtolower(trim((string) $plan));
@@ -279,10 +271,55 @@ function validSubscriptionPlan(?string $plan): bool
 
 function currentUserSubscriptionPlan(int $userId): string
 {
+    refreshUserSubscriptionState($userId);
+
     $stmt = db()->prepare('SELECT subscription_plan FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
     return subscriptionPlanKey($row['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN);
+}
+
+function refreshUserSubscriptionState(int $userId): ?array
+{
+    $stmt = db()->prepare('SELECT user_id, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        return null;
+    }
+
+    $now = new DateTimeImmutable('now');
+    $expiresAt = !empty($row['subscription_expires_at']) ? new DateTimeImmutable($row['subscription_expires_at']) : null;
+    $nextStartsAt = !empty($row['subscription_next_starts_at']) ? new DateTimeImmutable($row['subscription_next_starts_at']) : null;
+    $nextPlan = $row['subscription_next_plan'] ?? null;
+
+    $currentPlan = subscriptionPlanKey($row['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN);
+    $shouldPromoteNext = $nextPlan !== null && $nextPlan !== '' && $nextStartsAt !== null && $nextStartsAt <= $now;
+    $shouldExpireCurrent = $currentPlan !== 'free' && $expiresAt !== null && $expiresAt <= $now;
+
+    if (!$shouldPromoteNext && !$shouldExpireCurrent) {
+        return $row;
+    }
+
+    if ($shouldPromoteNext) {
+        $currentPlan = subscriptionPlanKey($nextPlan);
+        $startedAt = $row['subscription_next_starts_at'] ?? $now->format('Y-m-d H:i:s');
+        $expiresAtValue = $row['subscription_next_expires_at'] ?? null;
+        db()->prepare('UPDATE users SET subscription_plan = ?, subscription_started_at = ?, subscription_expires_at = ?, subscription_next_plan = NULL, subscription_next_starts_at = NULL, subscription_next_expires_at = NULL, subscription_updated_at = NOW() WHERE user_id = ?')
+            ->execute([$currentPlan, $startedAt, $expiresAtValue, $userId]);
+        db()->prepare('INSERT INTO subscription_plan_events (user_id, from_plan, to_plan, event_type, started_at, expires_at, applied_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+            ->execute([$userId, subscriptionPlanKey($row['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN), $currentPlan, 'activate', $startedAt, $expiresAtValue]);
+    } elseif ($shouldExpireCurrent) {
+        db()->prepare('UPDATE users SET subscription_plan = ?, subscription_started_at = NULL, subscription_expires_at = NULL, subscription_next_plan = NULL, subscription_next_starts_at = NULL, subscription_next_expires_at = NULL, subscription_updated_at = NOW() WHERE user_id = ?')
+            ->execute(['free', $userId]);
+        db()->prepare('INSERT INTO subscription_plan_events (user_id, from_plan, to_plan, event_type, started_at, expires_at, applied_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+            ->execute([$userId, $currentPlan, 'free', 'expire', $row['subscription_started_at'] ?? null, $row['subscription_expires_at'] ?? null]);
+    }
+
+    $stmt = db()->prepare('SELECT user_id, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    return $stmt->fetch() ?: $row;
 }
 
 function currentUserRolesEnabled(int $userId): bool

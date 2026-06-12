@@ -1,7 +1,6 @@
 import { reactive, computed, readonly } from 'vue'
 import { api } from '@/utils/api'
-import { getDemoUser, isDemoModeEnabled, resetDemoState, setDemoModeEnabled } from '@/utils/demoMode'
-import { projects } from './projectStore'
+import { projects } from '@/stores/projectStore'
 
 /* ─────────────────────────────────────────────
    Auth Store — session-based via PHP backend
@@ -12,6 +11,11 @@ const _state = reactive({
   name: '',
   email: '',
   subscriptionPlan: 'free',
+  subscriptionStartedAt: null,
+  subscriptionExpiresAt: null,
+  subscriptionNextPlan: null,
+  subscriptionNextStartsAt: null,
+  subscriptionNextExpiresAt: null,
   avatar: null,
   isLoggedIn: false,
   loading: false,
@@ -29,6 +33,11 @@ function applyAuthUser(data) {
     name: data.name,
     email: data.email,
     subscriptionPlan: data.subscriptionPlan || 'free',
+    subscriptionStartedAt: data.subscriptionStartedAt || null,
+    subscriptionExpiresAt: data.subscriptionExpiresAt || null,
+    subscriptionNextPlan: data.subscriptionNextPlan || null,
+    subscriptionNextStartsAt: data.subscriptionNextStartsAt || null,
+    subscriptionNextExpiresAt: data.subscriptionNextExpiresAt || null,
     avatar: null,
     isLoggedIn: true,
   })
@@ -48,12 +57,6 @@ function syncSubscriptionPlan(subscriptionPlan) {
  * Returns true if a valid session exists.
  */
 export async function checkSession() {
-  if (isDemoModeEnabled()) {
-    applyAuthUser(getDemoUser())
-    syncSubscriptionPlan(_state.subscriptionPlan)
-    return true
-  }
-
   try {
     const data = await api.get('/auth/me')
     applyAuthUser(data)
@@ -77,29 +80,12 @@ export async function login(email, password) {
   }
 }
 
-export async function register({ name, email, password }) {
+export async function register({ name, email, password, subscriptionPlan = 'free' }) {
   _state.loading = true
   _state.error = null
   try {
-    const data = await api.post('/auth/register', { name, email, password })
+    const data = await api.post('/auth/register', { name, email, password, subscriptionPlan })
     applyAuthUser(data)
-  } catch (err) {
-    _state.error = err.message
-    throw err
-  } finally {
-    _state.loading = false
-  }
-}
-
-export async function loginLocalDemo() {
-  _state.loading = true
-  _state.error = null
-
-  try {
-    setDemoModeEnabled(true)
-    resetDemoState()
-    applyAuthUser(getDemoUser())
-    syncSubscriptionPlan(_state.subscriptionPlan)
   } catch (err) {
     _state.error = err.message
     throw err
@@ -126,10 +112,19 @@ export async function updateSubscriptionPlan(subscriptionPlan) {
 
 export async function logout() {
   try { await api.post('/auth/logout') } catch { /* ignore */ }
-  setDemoModeEnabled(false)
   Object.assign(_state, {
-    id: null, name: '', email: '', subscriptionPlan: 'free', avatar: null,
-    isLoggedIn: false, error: null,
+    id: null,
+    name: '',
+    email: '',
+    subscriptionPlan: 'free',
+    subscriptionStartedAt: null,
+    subscriptionExpiresAt: null,
+    subscriptionNextPlan: null,
+    subscriptionNextStartsAt: null,
+    subscriptionNextExpiresAt: null,
+    avatar: null,
+    isLoggedIn: false,
+    error: null,
   })
 }
 
