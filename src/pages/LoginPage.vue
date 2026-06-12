@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
-import { login, loginLocalDemo, authLoading, authError, clearAuthError } from '@/stores/authStore'
+import { login, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
 
 const router = useRouter()
@@ -10,7 +10,6 @@ const route = useRoute()
 const email = ref('')
 const password = ref('')
 const localError = ref('')
-const demoLoginAvailable = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
 function validateLoginForm() {
   const trimmedEmail = email.value.trim().toLowerCase()
@@ -44,23 +43,6 @@ async function handleLogin() {
   }
 }
 
-async function handleDemoLogin() {
-  clearAuthError()
-  localError.value = ''
-
-  try {
-    await loginLocalDemo()
-    try {
-      await fetchProjects()
-    } catch (err) {
-      console.warn('Failed to fetch projects for demo login, continuing anyway:', err)
-    }
-    const redirect = route.query.redirect || '/dashboard'
-    await router.push(redirect)
-  } catch (err) {
-    console.error('Demo login failed:', err)
-  }
-}
 </script>
 
 <template>
@@ -89,21 +71,6 @@ async function handleDemoLogin() {
           {{ authLoading ? 'Bezig met inloggen…' : 'Inloggen' }}
         </button>
       </form>
-
-      <button
-        v-if="demoLoginAvailable"
-        type="button"
-        class="btn-demo"
-        :disabled="authLoading"
-        @click="handleDemoLogin"
-      >
-        <span v-if="authLoading" class="spinner spinner--dark"></span>
-        {{ authLoading ? 'Demo starten…' : 'Doorgaan zonder account' }}
-      </button>
-
-      <p v-if="demoLoginAvailable" class="auth-demo-note">
-        Alleen zichtbaar in lokale ontwikkeling. Maakt automatisch een tijdelijke demo-account aan.
-      </p>
 
       <p class="auth-switch">
         Nog geen account? <router-link to="/register">Registreren</router-link>
