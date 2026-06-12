@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
-import { login, authLoading, authError, clearAuthError } from '@/stores/authStore'
+import { login, loginLocalDemo, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
 
 const router = useRouter()
@@ -9,15 +9,57 @@ const route = useRoute()
 
 const email = ref('')
 const password = ref('')
+const localError = ref('')
+const demoLoginAvailable = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname)
+
+function validateLoginForm() {
+  const trimmedEmail = email.value.trim().toLowerCase()
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
+  if (!password.value.trim()) return 'Wachtwoord is verplicht'
+  return null
+}
 
 async function handleLogin() {
   clearAuthError()
+  localError.value = ''
+
+  const validationError = validateLoginForm()
+  if (validationError) {
+    localError.value = validationError
+    return
+  }
+
   try {
-    await login(email.value, password.value)
-    await fetchProjects()
+    await login(email.value.trim().toLowerCase(), password.value)
+    try {
+      await fetchProjects()
+    } catch (err) {
+      console.warn('Failed to fetch projects, continuing anyway:', err)
+    }
     const redirect = route.query.redirect || '/dashboard'
-    router.push(redirect)
-  } catch (_) { /* error shown via authError */ }
+    await router.push(redirect)
+  } catch (err) {
+    console.error('Login failed:', err)
+    // authError is already set by login()
+  }
+}
+
+async function handleDemoLogin() {
+  clearAuthError()
+  localError.value = ''
+
+  try {
+    await loginLocalDemo()
+    try {
+      await fetchProjects()
+    } catch (err) {
+      console.warn('Failed to fetch projects for demo login, continuing anyway:', err)
+    }
+    const redirect = route.query.redirect || '/dashboard'
+    await router.push(redirect)
+  } catch (err) {
+    console.error('Demo login failed:', err)
+  }
 }
 </script>
 
@@ -25,31 +67,46 @@ async function handleLogin() {
   <div class="auth-page">
     <div class="auth-card">
       <router-link to="/" class="auth-logo">
-        <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
-        <span>TaskPilot</span>
+        <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
+        <span>Vecta</span>
       </router-link>
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="auth-sub">Log in to your account</p>
+      <h1 class="auth-title">Welkom terug</h1>
+      <p class="auth-sub">Log in op je account</p>
 
-      <div v-if="authError" class="auth-error">{{ authError }}</div>
+      <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleLogin">
         <label class="form-label">
-          Email
-          <input v-model="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+          E-mail
+          <input v-model="email" type="email" class="form-input" placeholder="jij@voorbeeld.nl" autocomplete="email" />
         </label>
         <label class="form-label">
-          Password
+          Wachtwoord
           <input v-model="password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Logging in…' : 'Log in' }}
+          {{ authLoading ? 'Bezig met inloggen…' : 'Inloggen' }}
         </button>
       </form>
 
+      <button
+        v-if="demoLoginAvailable"
+        type="button"
+        class="btn-demo"
+        :disabled="authLoading"
+        @click="handleDemoLogin"
+      >
+        <span v-if="authLoading" class="spinner spinner--dark"></span>
+        {{ authLoading ? 'Demo starten…' : 'Doorgaan zonder account' }}
+      </button>
+
+      <p v-if="demoLoginAvailable" class="auth-demo-note">
+        Alleen zichtbaar in lokale ontwikkeling. Maakt automatisch een tijdelijke demo-account aan.
+      </p>
+
       <p class="auth-switch">
-        Don't have an account? <router-link to="/register">Sign up</router-link>
+        Nog geen account? <router-link to="/register">Registreren</router-link>
       </p>
     </div>
   </div>
@@ -140,6 +197,27 @@ async function handleLogin() {
 }
 .btn-submit:hover { background: var(--color-accent-hover); }
 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-demo:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-2));
+}
+.btn-demo:disabled { opacity: 0.6; cursor: not-allowed; }
 .spinner {
   width: 14px;
   height: 14px;
@@ -148,7 +226,9 @@ async function handleLogin() {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+.spinner--dark { border-color: color-mix(in srgb, var(--color-text-1) 25%, transparent); border-top-color: var(--color-text-1); }
 @keyframes spin { to { transform: rotate(360deg); } }
+.auth-demo-note { font-size: 12px; color: var(--color-text-3); text-align: center; line-height: 1.4; margin-top: -2px; }
 .auth-switch { font-size: 13px; color: var(--color-text-2); text-align: center; }
 .auth-switch a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
 .auth-switch a:hover { text-decoration: underline; }

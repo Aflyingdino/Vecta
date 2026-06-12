@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
 import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
-import { findTask, addComment, deleteTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
+import { findTask, addComment, deleteTask, archiveTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import ColorPicker from './ColorPicker.vue'
@@ -137,6 +137,11 @@ function handleDelete() {
   closeTaskDetail()
 }
 
+function handleArchive() {
+  archiveTask(task.value.id)
+  closeTaskDetail()
+}
+
 /* ── Attachments ──────────────────────────── */
 const fileInput = ref(null)
 
@@ -144,24 +149,53 @@ function triggerUpload() {
   fileInput.value?.click()
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
   const files = Array.from(event.target.files || [])
-  if (!files.length || !task.value) return
-  const existing = task.value.attachments ?? []
-  const added = files.map(file => ({
-    id: Date.now() + Math.random(),
-    filename: file.name,
-    url: URL.createObjectURL(file),
-    mime_type: file.type,
-    size_bytes: file.size,
-    uploaded_at: new Date().toISOString(),
-  }))
-  updateTask(task.value.id, { attachments: [...existing, ...added] })
-  event.target.value = ''
+  if (!files.length) return
+  
+  if (!task.value) {
+    console.error('Task not found')
+    return
+  }
+  
+  try {
+    const existing = task.value.attachments ?? []
+    const added = files.map(file => {
+      const objectUrl = URL.createObjectURL(file)
+      // Track URL for cleanup
+      task.value._pendingObjectUrls = task.value._pendingObjectUrls || []
+      task.value._pendingObjectUrls.push(objectUrl)
+      return {
+        id: Date.now() + Math.random(),
+        filename: file.name,
+        url: objectUrl,
+        mime_type: file.type,
+        size_bytes: file.size,
+        uploaded_at: new Date().toISOString(),
+      }
+    })
+    
+    await updateTask(task.value.id, { attachments: [...existing, ...added] })
+    event.target.value = ''
+  } catch (err) {
+    console.error('Failed to upload files:', err)
+    // Revoke any created object URLs on error
+    if (task.value._pendingObjectUrls) {
+      for (const url of task.value._pendingObjectUrls) {
+        URL.revokeObjectURL(url)
+      }
+      task.value._pendingObjectUrls = []
+    }
+  }
 }
 
 function removeAttachment(attachId) {
   if (!task.value) return
+  const attachment = (task.value.attachments ?? []).find(a => a.id === attachId)
+  // Revoke object URLs to free memory
+  if (attachment?.url?.startsWith('blob:')) {
+    URL.revokeObjectURL(attachment.url)
+  }
   const updated = (task.value.attachments ?? []).filter(a => a.id !== attachId)
   updateTask(task.value.id, { attachments: updated })
 }
@@ -190,13 +224,13 @@ function fileIcon(mimeType) {
 
           <!-- Header -->
           <div class="detail-header">
-            <span class="detail-panel-title">Task details</span>
+            <span class="detail-panel-title">Taakdetails</span>
             <div class="detail-header-actions">
               <button
                 class="hdr-btn hdr-btn--mute"
                 :class="{ 'hdr-btn--muted': isTaskMuted }"
                 @click="toggleMuteTask(task.id)"
-                :title="isTaskMuted ? 'Unmute notifications' : 'Mute notifications'"
+                :title="isTaskMuted ? 'Meldingen inschakelen' : 'Meldingen dempen'"
               >
                 <svg v-if="!isTaskMuted" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -205,19 +239,25 @@ function fileIcon(mimeType) {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                   <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
                 </svg>
-                Mute
+                Dempen
               </button>
               <button class="hdr-btn" @click="openEditTask(task.id); closeTaskDetail()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
                 </svg>
-                Edit
+                Bewerken
+              </button>
+              <button class="hdr-btn" @click="handleArchive" title="Taak archiveren">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Archiveren
               </button>
               <button class="hdr-btn hdr-btn--danger" @click="handleDelete">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                 </svg>
-                Delete
+                Verwijderen
               </button>
               <button class="close-btn" @click="closeTaskDetail">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -251,7 +291,7 @@ function fileIcon(mimeType) {
                 </span>
               </div>
               <div class="meta-item">
-                <span class="meta-key">Created</span>
+                <span class="meta-key">Aangemaakt</span>
                 <span class="meta-val">{{ formatDateTime(task.createdAt) }}</span>
               </div>
               <div class="meta-item" v-if="task.labelIds?.length">
@@ -272,20 +312,20 @@ function fileIcon(mimeType) {
 
             <!-- Description -->
             <div class="section">
-              <span class="section-title">Description</span>
+              <span class="section-title">Beschrijving</span>
               <div v-if="task.description" class="description-body">{{ task.description }}</div>
-              <div v-else class="empty-text">No description provided.</div>
+              <div v-else class="empty-text">Geen beschrijving opgegeven.</div>
             </div>
 
             <!-- Notes -->
             <div class="section">
               <div class="section-title-row">
-                <span class="section-title">Notes <span class="comment-count">{{ notes.length }}</span></span>
+                <span class="section-title">Notities <span class="comment-count">{{ notes.length }}</span></span>
                 <button v-if="canManageNotes" class="note-add-btn" @click="openAddNote">
                   <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <path d="M12 5v14M5 12h14"/>
                   </svg>
-                  Add note
+                  Notitie toevoegen
                 </button>
               </div>
 
@@ -315,31 +355,31 @@ function fileIcon(mimeType) {
                       </template>
                       <template v-else-if="note.contentType === 'image'">
                         <img v-if="note.content" :src="note.content" class="note-media" alt="Note image" />
-                        <span v-else class="empty-text">No image URL provided.</span>
+                        <span v-else class="empty-text">Geen afbeeldings-URL opgegeven.</span>
                       </template>
                       <template v-else-if="note.contentType === 'video'">
                         <video v-if="note.content" :src="note.content" class="note-media" controls />
-                        <span v-else class="empty-text">No video URL provided.</span>
+                        <span v-else class="empty-text">Geen video-URL opgegeven.</span>
                       </template>
                     </div>
                     <div class="note-meta">
-                      <span class="note-author">by {{ note.createdBy }}</span>
+                      <span class="note-author">door {{ note.createdBy }}</span>
                       <span class="note-time">{{ formatDateTime(note.createdAt) }}</span>
                       <div v-if="canManageNotes" class="note-actions">
-                        <button class="note-action-btn" @click="openEditNote(note)">Edit</button>
-                        <button class="note-action-btn note-action-btn--danger" @click="removeNote(note.id)">Delete</button>
+                        <button class="note-action-btn" @click="openEditNote(note)">Bewerken</button>
+                        <button class="note-action-btn note-action-btn--danger" @click="removeNote(note.id)">Verwijderen</button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-else-if="!showNoteForm" class="empty-text">No notes yet.</div>
+              <div v-else-if="!showNoteForm" class="empty-text">Nog geen notities.</div>
 
               <!-- Note form (inline) -->
               <div v-if="showNoteForm && canManageNotes" class="note-form">
-                <p class="note-form-title">{{ editingNoteId !== null ? 'Edit note' : 'New note' }}</p>
+                <p class="note-form-title">{{ editingNoteId !== null ? 'Notitie bewerken' : 'Nieuwe notitie' }}</p>
                 <div class="note-form-row">
-                  <input v-model="noteForm.title" placeholder="Note title" class="note-input" autofocus />
+                  <input v-model="noteForm.title" placeholder="Notitietitel" class="note-input" autofocus />
                 </div>
                 <!-- Content type toggle -->
                 <div class="note-type-row">
@@ -355,7 +395,7 @@ function fileIcon(mimeType) {
                 <textarea
                   v-if="noteForm.contentType === 'text'"
                   v-model="noteForm.content"
-                  placeholder="Note content..."
+                  placeholder="Notitie-inhoud..."
                   class="note-input note-textarea"
                   rows="3"
                 />
@@ -364,26 +404,26 @@ function fileIcon(mimeType) {
                     v-model="noteForm.content"
                     type="url"
                     class="note-input"
-                    :placeholder="noteForm.contentType === 'image' ? 'Paste image URL...' : 'Paste video URL...'"
+                    :placeholder="noteForm.contentType === 'image' ? 'Plak afbeeldings-URL...' : 'Plak video-URL...'"
                   />
                   <span v-if="noteForm.content" class="note-file-preview-hint">
                     <img v-if="noteForm.contentType === 'image'" :src="noteForm.content" class="note-file-thumb" @error="e => e.target.style.display='none'" />
-                    <span v-else>🎬 Video URL saved</span>
+                    <span v-else>🎬 Video-URL opgeslagen</span>
                   </span>
                 </div>
                 <!-- Color pickers -->
                 <div class="note-color-row">
-                  <ColorPicker v-model="noteForm.bgColor" small label="Background" />
-                  <ColorPicker v-model="noteForm.textColor" small label="Text" />
+                  <ColorPicker v-model="noteForm.bgColor" small label="Achtergrond" />
+                  <ColorPicker v-model="noteForm.textColor" small label="Tekst" />
                   <!-- Preview -->
                   <span class="note-pill note-pill--preview" :style="{ background: noteForm.bgColor, color: noteForm.textColor }">
-                    {{ noteForm.title || 'Preview' }}
+                    {{ noteForm.title || 'Voorbeeld' }}
                   </span>
                 </div>
                 <div class="note-form-actions">
-                  <button class="btn-ghost-sm" @click="resetNoteForm" type="button">Cancel</button>
+                  <button class="btn-ghost-sm" @click="resetNoteForm" type="button">Annuleren</button>
                   <button class="btn-primary-sm" @click="submitNote" :disabled="!noteForm.title.trim()" type="button">
-                    {{ editingNoteId !== null ? 'Save' : 'Add note' }}
+                    {{ editingNoteId !== null ? 'Opslaan' : 'Notitie toevoegen' }}
                   </button>
                 </div>
               </div>

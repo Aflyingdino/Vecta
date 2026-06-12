@@ -8,8 +8,16 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   frontend-build:
@@ -64,6 +72,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -87,6 +96,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Publish build to production branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git ls-remote --exit-code --heads origin production; then
             git worktree add /tmp/production origin/production
@@ -99,13 +110,9 @@ jobs:
           # Frontend build output
           cp -r dist/. /tmp/production/
 
-          # Backend + database files required on server
+          # Backend required on server
           cp -r api /tmp/production/
           cp -r db /tmp/production/
-
-          # Keep key project files needed in production
-          cp openapi.yaml /tmp/production/
-          cp readme.md /tmp/production/
 
           cd /tmp/production
           git add -A
@@ -116,4 +123,5 @@ jobs:
           fi
 
           git commit -m "Production build from main (${GITHUB_SHA})"
-          git push origin HEAD:production
+          # Use GITHUB_TOKEN via http.extraheader to ensure authenticated push from Actions
+          git -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" push --force-with-lease origin HEAD:production

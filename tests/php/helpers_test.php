@@ -31,8 +31,11 @@ expectTrue(!validEmail('nope@'), 'validEmail rejects invalid email');
 expectSame('john@example.com', normalizeEmail('  John@Example.com '), 'normalizeEmail lowercases and trims');
 
 expectTrue(validPassword('Abc1234567'), 'validPassword accepts strong password');
-expectTrue(validPassword('abcdefgxyz'), 'validPassword accepts alphabetic password');
-expectTrue(validPassword('abc1234567'), 'validPassword accepts password without uppercase');
+expectTrue(!validPassword('abcdefgxyz'), 'validPassword rejects password without uppercase and number');
+expectTrue(!validPassword('abc1234567'), 'validPassword rejects password without uppercase');
+expectTrue(!validPassword('ABC1234567'), 'validPassword rejects password without lowercase');
+expectTrue(!validPassword('Abcdefghij'), 'validPassword rejects password without number');
+expectTrue(!validPassword('Abc1234'), 'validPassword rejects short password');
 expectTrue(!validPassword('   '), 'validPassword rejects whitespace-only password');
 
 expectTrue(validColor('#a1B2c3'), 'validColor accepts hex color');
@@ -43,6 +46,9 @@ expectTrue(!validDateString('2026-99-99'), 'validDateString rejects invalid date
 expectTrue(validDateTimeString('2026-03-16 13:45:00'), 'validDateTimeString accepts strict datetime');
 
 expectSame('fakeadmin', normalizeModerationText('F@KE---ADM111N'), 'normalizeModerationText strips and normalizes');
+expectTrue(hasBlockedUsernameContent('Jesse'), 'blocked username list matches Jesse');
+expectTrue(hasBlockedUsernameContent('Bram van Andel'), 'blocked username list matches Bram van Andel');
+expectTrue(hasBlockedUsernameContent('Je moeder'), 'blocked username list matches Je moeder');
 
 expectSame('/projects/10', path(), 'path strips api prefix');
 

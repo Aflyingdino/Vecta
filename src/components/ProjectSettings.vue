@@ -1,10 +1,12 @@
 ﻿<script setup>
 import { ref, computed } from 'vue'
-import { ui, closeSettings } from '@/stores/uiStore'
+import { ui, closeSettings, toggleTheme } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
 import { activeProject, addMember, removeMember, updateMemberRole } from '@/stores/projectStore'
 import ColorPicker from './ColorPicker.vue'
+import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
+import { user } from '@/stores/authStore'
 
 /* ── Tab state ── */
 const activeTab = ref('labels') // 'labels' | 'members'
@@ -39,16 +41,17 @@ function saveEdit() {
 const memberEmail = ref('')
 const memberRole  = ref('collaborator')
 const memberError = ref('')
+const rolesEnabled = computed(() => canUseRoles(user.subscriptionPlan))
 
 async function inviteMember() {
   memberError.value = ''
   const email = memberEmail.value.trim().toLowerCase()
-  if (!email || !email.includes('@')) { memberError.value = 'Enter a valid email.'; return }
+  if (!email || !email.includes('@')) { memberError.value = 'Voer een geldig e-mailadres in.'; return }
   const p = activeProject.value
   if (!p) return
-  if (p.members.find(m => m.email === email)) { memberError.value = 'Already a member.'; return }
+  if (p.members.find(m => m.email === email)) { memberError.value = 'Deze gebruiker is al lid.'; return }
   try {
-    await addMember(p.id, email, memberRole.value)
+    await addMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
     memberEmail.value = ''
     memberRole.value  = 'collaborator'
   } catch (err) {
@@ -67,9 +70,9 @@ async function kickMember(memberId) {
 }
 
 const ROLES = [
-  { value: 'owner', label: 'Owner' },
+  { value: 'owner', label: 'Eigenaar' },
   { value: 'admin', label: 'Admin' },
-  { value: 'collaborator',  label: 'Member' },
+  { value: 'collaborator',  label: 'Lid' },
 ]
 
 const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.value.has(activeProject.value.id))
@@ -82,12 +85,13 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
         <div class="settings-modal">
 
           <div class="settings-header">
-            <span class="settings-title">Project Settings</span>
+            <span class="settings-title">Projectinstellingen</span>
+            <span v-if="activeProject" class="project-plan-chip">{{ getPlanLabel(user.subscriptionPlan) }}</span>
             <button
               v-if="activeProject"
               class="settings-mute-btn"
               :class="{ 'settings-mute-btn--active': isProjectMuted }"
-              :title="isProjectMuted ? 'Unmute project notifications' : 'Mute project notifications'"
+              :title="isProjectMuted ? 'Projectmeldingen inschakelen' : 'Projectmeldingen dempen'"
               @click="toggleMuteProject(activeProject.id)"
             >
               <svg v-if="!isProjectMuted" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -97,7 +101,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
               </svg>
-              {{ isProjectMuted ? 'Muted' : 'Mute' }}
+              {{ isProjectMuted ? 'Gedempt' : 'Dempen' }}
             </button>
             <button class="close-btn" @click="closeSettings">
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -128,30 +132,30 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                Members
+                Leden
               </button>
             </div>
 
             <!-- ══ LABELS TAB ══ -->
             <div v-if="activeTab === 'labels'" class="tab-content">
               <div class="add-label-form">
-                <p class="section-label">Create a label</p>
+                <p class="section-label">Label aanmaken</p>
                 <div class="add-label-row">
                   <input
                     v-model="newName"
                     type="text"
                     class="label-name-input"
-                    placeholder="Label name..."
+                    placeholder="Labelnaam..."
                     @keydown.enter="addLabel"
                   />
                   <ColorPicker v-model="newColor" />
-                  <button class="btn-add" @click="addLabel" :disabled="!newName.trim()">Add</button>
+                  <button class="btn-add" @click="addLabel" :disabled="!newName.trim()">Toevoegen</button>
                 </div>
               </div>
 
               <div class="label-list">
                 <div v-if="projectLabels.length === 0" class="labels-empty">
-                  No labels yet. Create one above.
+                  Nog geen labels. Maak er hierboven een aan.
                 </div>
                 <div v-for="label in projectLabels" :key="label.id" class="label-row">
                   <template v-if="editingId === label.id">
@@ -162,8 +166,8 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                       @keydown.escape="editingId = null"
                     />
                     <ColorPicker v-model="editColor" />
-                    <button class="label-action-btn" @click="saveEdit">Save</button>
-                    <button class="label-action-btn" @click="editingId = null">Cancel</button>
+                    <button class="label-action-btn" @click="saveEdit">Opslaan</button>
+                    <button class="label-action-btn" @click="editingId = null">Annuleren</button>
                   </template>
                   <template v-else>
                     <span class="label-preview" :style="{ '--lc': label.color }">
@@ -171,12 +175,12 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                       {{ label.name }}
                     </span>
                     <div class="label-row-actions">
-                      <button class="icon-btn" @click="startEdit(label)" title="Edit">
+                      <button class="icon-btn" @click="startEdit(label)" title="Bewerken">
                         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                         </svg>
                       </button>
-                      <button class="icon-btn icon-btn--danger" @click="deleteLabel(label.id)" title="Delete">
+                      <button class="icon-btn icon-btn--danger" @click="deleteLabel(label.id)" title="Verwijderen">
                         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -190,23 +194,34 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
             <!-- ══ MEMBERS TAB ══ -->
             <div v-if="activeTab === 'members'" class="tab-content">
 
+              <div class="members-actions-row">
+                <button
+                  class="settings-theme-btn"
+                  @click="toggleTheme"
+                  :title="ui.lightMode ? 'Schakel naar donkere modus' : 'Schakel naar lichte modus'"
+                >
+                  {{ ui.lightMode ? 'Schakel naar donkere modus' : 'Schakel naar lichte modus' }}
+                </button>
+              </div>
+
               <!-- Invite form -->
               <div class="add-label-form">
-                <p class="section-label">Invite a collaborator</p>
+                <p class="section-label">Collega uitnodigen</p>
                 <div class="invite-row">
                   <input
                     v-model="memberEmail"
                     type="email"
                     class="label-name-input"
-                    placeholder="colleague@example.com"
+                    placeholder="collega@voorbeeld.nl"
                     @keydown.enter="inviteMember"
                   />
-                  <select v-model="memberRole" class="role-select">
+                  <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
                     <option value="admin">Admin</option>
-                    <option value="user">Member</option>
+                    <option value="collaborator">Lid</option>
                   </select>
-                  <button class="btn-add" @click="inviteMember">Invite</button>
+                  <button class="btn-add" @click="inviteMember">Uitnodigen</button>
                 </div>
+                <p v-if="!rolesEnabled" class="member-note">Rollen zijn beschikbaar vanaf Premium+.</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>
               </div>
 
@@ -216,7 +231,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   v-if="!activeProject || activeProject.members.length === 0"
                   class="labels-empty"
                 >
-                  No collaborators yet. Invite someone above.
+                  Nog geen leden. Nodig hierboven iemand uit.
                 </div>
                 <div
                   v-for="m in (activeProject?.members ?? [])"
@@ -227,22 +242,24 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   <div class="member-info">
                     <span class="member-name">{{ m.name || m.email }}</span>
                     <span class="member-email">{{ m.email }}</span>
+                    <span class="member-plan">{{ getPlanLabel(m.subscriptionPlan) }}</span>
                   </div>
                   <select
                     class="role-select role-select--sm"
                     :value="m.role"
-                    :disabled="m.role === 'owner'"
+                    :disabled="m.role === 'owner' || !rolesEnabled"
                     @change="changeRole(m.id, $event.target.value)"
+                    v-if="rolesEnabled || m.role === 'owner'"
                   >
-                    <option value="owner" :disabled="m.role !== 'owner'">Owner</option>
+                    <option value="owner" :disabled="m.role !== 'owner'">Eigenaar</option>
                     <option value="admin">Admin</option>
-                    <option value="user">Member</option>
+                    <option value="collaborator">Lid</option>
                   </select>
                   <button
                     v-if="m.role !== 'owner'"
                     class="icon-btn icon-btn--danger"
                     @click="kickMember(m.id)"
-                    title="Remove member"
+                    title="Lid verwijderen"
                   >
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -293,6 +310,9 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-1);
+}
+.project-plan-chip {
+  margin-left: auto;
 }
 .close-btn {
   display: flex;
@@ -482,6 +502,24 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 11px;
   color: var(--color-text-3);
   white-space: nowrap;
+.member-plan {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.member-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-3);
+}
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -489,6 +527,28 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   margin-top: 8px;
   font-size: 12px;
   color: var(--color-danger);
+}
+
+.members-actions-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-theme-btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.settings-theme-btn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-1);
 }
 
 /* Label rows */

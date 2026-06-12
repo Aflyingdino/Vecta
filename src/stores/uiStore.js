@@ -5,7 +5,8 @@ export const ui = reactive({
   editTaskId: null,    // null = create mode, number = edit mode
   detailTaskId: null,  // open task detail panel for this id
   settingsOpen: false,
-  lightMode: localStorage.getItem('theme') === 'light',
+  lightMode: localStorage.getItem('theme') !== 'dark',
+  locale: localStorage.getItem('locale') || 'nl-NL',
 })
 
 export function openCreateTask() {
@@ -51,4 +52,6 @@ export function applyTheme() {
   } else {
     document.documentElement.classList.remove('light-mode')
   }
+
+  document.documentElement.lang = ui.locale.startsWith('nl') ? 'nl' : 'en'
 }

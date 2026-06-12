@@ -16,8 +16,8 @@ const creators = [
 
       <header class="contact-header">
         <div class="contact-label">Contact</div>
-        <h1>Get in touch</h1>
-        <p class="lead">Questions or feedback? Reach out directly.</p>
+        <h1>Neem contact op</h1>
+        <p class="lead">Vragen of feedback? Neem direct contact op.</p>
       </header>
 
       <section class="section">
@@ -27,7 +27,7 @@ const creators = [
             <div class="creator-initials">{{ c.initials }}</div>
             <div>
               <div class="creator-name">{{ c.name }}</div>
-              <div class="creator-role">Developer</div>
+              <div class="creator-role">Ontwikkelaar</div>
             </div>
           </div>
         </div>
@@ -40,7 +40,7 @@ const creators = [
 
       <section class="section">
         <h2 class="section-title">Portfolio</h2>
-        <a href="#" class="portfolio-link">View our portfolio</a>
+        <a href="#" class="portfolio-link">Bekijk ons portfolio</a>
       </section>
 
     </main>

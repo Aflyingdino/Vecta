@@ -2,6 +2,7 @@
  * Date formatting utilities — single source of truth for locale-aware formatting.
  * All functions accept an ISO 8601 string or a Date object.
  */
+import { APP_LOCALE } from './constants.js'
 
 /**
  * Format a date as "DD Mon" (e.g. "02 Mar").
@@ -9,7 +10,7 @@
  */
 export function formatShortDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short' })
 }
 
 /**
@@ -18,7 +19,7 @@ export function formatShortDate(iso) {
  */
 export function formatLongDate(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString(APP_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 /**
@@ -36,5 +37,5 @@ export function isOverdue(iso) {
  */
 export function formatTime(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return new Date(iso).toLocaleTimeString(APP_LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })
 }

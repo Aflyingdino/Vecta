@@ -5,21 +5,21 @@ import { isLoggedIn } from '@/stores/authStore'
 <template>
   <header class="pub-nav">
     <router-link to="/" class="pub-brand">
-      <img src="/logo.png" alt="TaskPilot logo" width="26" height="26" />
-      <span>TaskPilot</span>
+      <img src="/logo.png" alt="Vecta logo" width="26" height="26" />
+      <span>Vecta</span>
     </router-link>
 
     <nav class="pub-links">
       <router-link to="/" exact-active-class="pub-link--active" class="pub-link">Home</router-link>
-      <router-link to="/about" active-class="pub-link--active" class="pub-link">About</router-link>
+      <router-link to="/about" active-class="pub-link--active" class="pub-link">Over ons</router-link>
       <router-link to="/contact" active-class="pub-link--active" class="pub-link">Contact</router-link>
 
       <template v-if="!isLoggedIn">
-        <router-link to="/login" class="pub-btn pub-btn--ghost">Log in</router-link>
-        <router-link to="/register" class="pub-btn pub-btn--primary">Get started</router-link>
+        <router-link to="/login" class="pub-btn pub-btn--ghost">Inloggen</router-link>
+        <router-link to="/register" class="pub-btn pub-btn--primary">Aan de slag</router-link>
       </template>
       <template v-else>
-        <router-link to="/projects" class="pub-btn pub-btn--primary">Open app</router-link>
+        <router-link to="/projects" class="pub-btn pub-btn--primary">App openen</router-link>
       </template>
     </nav>
   </header>
