@@ -14,8 +14,8 @@ const localError = ref('')
 
 function validateLoginForm() {
   const trimmedEmail = email.value.trim().toLowerCase()
-  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
-  if (!password.value.trim()) return 'Wachtwoord is verplicht'
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return t('invalidEmail')
+  if (!password.value.trim()) return t('passwordRequired')
   return null
 }
 
@@ -53,19 +53,19 @@ async function handleLogin() {
         <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
         <span>Vecta</span>
       </router-link>
-      <h1 class="auth-title">Welkom terug</h1>
-      <p class="auth-sub">Log in op je account</p>
+      <h1 class="auth-title">{{ t('welcomeBack') }}</h1>
+      <p class="auth-sub">{{ t('loginToAccount') }}</p>
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleLogin">
         <label class="form-label">
-          E-mail
-          <input v-model="email" type="email" class="form-input" placeholder="jij@voorbeeld.nl" autocomplete="email" />
+          {{ t('email') }}
+          <input v-model="email" type="email" class="form-input" :placeholder="t('emailPlaceholder')" autocomplete="email" />
         </label>
         <label class="form-label">
-          Wachtwoord
-          <input v-model="password" type="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+          {{ t('password') }}
+          <input v-model="password" type="password" class="form-input" :placeholder="t('passwordPlaceholder')" autocomplete="current-password" />
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>

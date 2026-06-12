@@ -69,7 +69,7 @@ const userInitials = computed(() => {
         <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
         <span class="logo-text">Vecta</span>
       </router-link>
-      <button class="collapse-btn" @click="toggleCollapse" :title="collapsed ? 'Zijbalk uitklappen' : 'Zijbalk inklappen'" :aria-label="collapsed ? 'Zijbalk uitklappen' : 'Zijbalk inklappen'">
+      <button class="collapse-btn" @click="toggleCollapse" :title="collapsed ? t('expandSidebar') : t('collapseSidebar')" :aria-label="collapsed ? t('expandSidebar') : t('collapseSidebar')">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" :d="collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'" />
         </svg>
@@ -85,7 +85,7 @@ const userInitials = computed(() => {
         :to="navTarget(link)"
         class="nav-item"
         :class="{ 'nav-item--active': isActive(link.name) }"
-        :title="collapsed ? link.label : ''"
+        :title="collapsed ? t(link.labelKey) : ''"
       >
         <!-- Grid icon -->
         <svg v-if="link.icon === 'grid'" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -129,7 +129,7 @@ const userInitials = computed(() => {
     <!-- Bottom: user -->
     <div class="sidebar-bottom">
       <div class="user-row" :class="{ 'user-row--collapsed': collapsed }">
-        <router-link to="/account" class="user-link" :title="collapsed ? 'Account' : 'Open account'">
+        <router-link to="/account" class="user-link" :title="collapsed ? t('account') : t('openAccount')">
           <div class="user-avatar">{{ userInitials }}</div>
           <div class="user-info" v-if="!collapsed">
             <p class="user-name">{{ user.name }}</p>
@@ -137,12 +137,12 @@ const userInitials = computed(() => {
             <span class="user-plan">{{ getPlanLabel(user.subscriptionPlan) }}</span>
           </div>
         </router-link>
-        <button v-if="!collapsed" class="settings-btn" @click="openSettings" title="Instellingen">
+        <button v-if="!collapsed" class="settings-btn" @click="openSettings" :title="t('settings')">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 10-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 10-3 0m-9.75 0h9.75" />
           </svg>
         </button>
-        <button v-if="!collapsed" class="logout-btn" @click="handleLogout" title="Uitloggen">
+        <button v-if="!collapsed" class="logout-btn" @click="handleLogout" :title="t('logOut')">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
           </svg>

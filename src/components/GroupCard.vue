@@ -272,8 +272,8 @@ const archivedTasks = computed(() => props.group.archivedTasks ?? [])
         </button>
         <!-- Archive (with confirm) -->
         <template v-if="confirmingArchive">
-          <span class="col-confirm-text">Archiveren?</span>
-          <button class="col-icon-btn col-icon-btn--confirm-yes" @click.stop="archiveGroup(group.id)" title="Ja, archiveren">
+          <span class="col-confirm-text">{{ t('archiveConfirm') }}</span>
+          <button class="col-icon-btn col-icon-btn--confirm-yes" @click.stop="archiveGroup(group.id)" :title="t('archiveYes')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>
           <button class="col-icon-btn" @click.stop="confirmingArchive = false" :title="t('cancel')">
@@ -312,7 +312,7 @@ const archivedTasks = computed(() => props.group.archivedTasks ?? [])
           class="col-icon-btn"
           :class="{ 'col-icon-btn--muted': isGroupMuted }"
           @click.stop="toggleMuteGroup(group.id)"
-          :title="isGroupMuted ? 'Meldingen inschakelen' : 'Meldingen dempen'"
+          :title="isGroupMuted ? t('enableNotifications') : t('muteNotifications')"
         >
           <svg v-if="!isGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -330,42 +330,42 @@ const archivedTasks = computed(() => props.group.archivedTasks ?? [])
       <div v-if="metaOpen && !collapsed" class="col-meta-panel">
         <div class="meta-panel-hdr">
           <span class="meta-panel-title">{{ t('groupSettings') }}</span>
-          <button class="meta-back-btn" @click="metaOpen = false" title="Instellingen sluiten">
+          <button class="meta-back-btn" @click="metaOpen = false" :title="t('closeSettings')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>
           </button>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Beschrijving</label>
+          <label class="meta-label">{{ t('description') }}</label>
           <textarea v-model="metaForm.description" class="meta-input meta-textarea" rows="2" :placeholder="t('groupDescriptionPlaceholder')" />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Status</label>
+          <label class="meta-label">{{ t('status') }}</label>
           <select v-model="metaForm.status" class="meta-input meta-select">
             <option v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </select>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Prioriteit</label>
+          <label class="meta-label">{{ t('priority') }}</label>
           <select v-model="metaForm.priority" class="meta-input meta-select">
             <option v-for="p in PRIORITY_OPTIONS" :key="p.value" :value="p.value">{{ p.label }}</option>
           </select>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Deadline</label>
+          <label class="meta-label">{{ t('deadline') }}</label>
           <input v-model="metaForm.deadline" type="date" class="meta-input" />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Hoofdkleur (achtergrondtint)</label>
+          <label class="meta-label">{{ t('mainColor') }}</label>
           <ColorPicker v-model="metaForm.mainColor" small />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Accentkleur (rand)</label>
+          <label class="meta-label">{{ t('accentColor') }}</label>
           <ColorPicker v-model="metaForm.color" small />
         </div>
         <div class="meta-field" v-if="projectLabels.length">
-          <label class="meta-label">Labels</label>
+          <label class="meta-label">{{ t('labels') }}</label>
           <div class="meta-labels">
             <button
               v-for="l in projectLabels"
@@ -445,8 +445,8 @@ const archivedTasks = computed(() => props.group.archivedTasks ?? [])
 
     <!-- Drop hint -->
     <div class="drop-hint" :class="{ 'drop-hint--over': isDragOver }">
-      Zet taak hier neer
-    </div>
+        {{ t('dropTaskHere') }}
+      </div>
   </div>
 </template>
 

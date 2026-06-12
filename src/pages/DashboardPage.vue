@@ -364,7 +364,7 @@ function goToActivityTask(entry) {
           <section class="dash-section">
             <h2 class="section-title">
               <span class="dot dot--green"></span>
-              Projecten ({{ projects.length }})
+              {{ t('projects') }} ({{ projects.length }})
             </h2>
             <div class="project-list" v-if="projects.length">
               <router-link
@@ -378,7 +378,7 @@ function goToActivityTask(entry) {
                 <div class="project-row__info">
                   <span class="project-row__name">{{ p.name }}</span>
                   <span class="project-row__count">
-                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} taken
+                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} {{ t('tasks') }}
                   </span>
                 </div>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="arrow">
@@ -387,7 +387,7 @@ function goToActivityTask(entry) {
               </router-link>
             </div>
             <div v-else class="empty-section">
-              <p><router-link to="/projects">Maak je eerste project</router-link></p>
+              <p><router-link to="/projects">{{ t('createFirstProject') }}</router-link></p>
             </div>
           </section>
         </div>
@@ -478,7 +478,7 @@ function goToActivityTask(entry) {
                   v-if="entry.taskId || entry.projectId"
                   class="activity-mute-btn"
                   :class="{ 'activity-mute-btn--active': entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId) }"
-                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Meldingen inschakelen' : 'Meldingen dempen'"
+                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? t('enableNotifications') : t('muteNotifications')"
                   @click.stop="entry.taskId ? toggleMuteTask(entry.taskId) : toggleMuteProject(entry.projectId)"
                 >
                   <svg v-if="!(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId))" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

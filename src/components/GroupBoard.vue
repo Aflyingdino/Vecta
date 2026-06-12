@@ -310,7 +310,7 @@ function onDragEnd() {
                 <button
                   class="group-detail-mute"
                   :class="{ 'group-detail-mute--active': isDetailGroupMuted }"
-                  :title="isDetailGroupMuted ? 'Meldingen inschakelen' : 'Meldingen dempen'"
+                  :title="isDetailGroupMuted ? t('enableNotifications') : t('muteNotifications')"
                   @click="toggleMuteGroup(detailGroupId)"
                 >
                   <svg v-if="!isDetailGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -364,16 +364,16 @@ function onDragEnd() {
                     </span>
                     <span class="detail-meta-item">
                       <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                      {{ detailGroup.tasks.length }} taak{{ detailGroup.tasks.length !== 1 ? 'en' : '' }}
+                      {{ detailGroup.tasks.length }} {{ t('tasks') }}
                     </span>
                   </div>
                 </div>
 
                 <!-- Tasks -->
                 <div class="detail-tasks-section">
-                  <div class="detail-section-title">Taken</div>
+                  <div class="detail-section-title">{{ t('tasks') }}</div>
                   <div v-if="detailGroup.tasks.length === 0" class="detail-empty">
-                    Nog geen taken in deze groep.
+                    {{ t('noTasksInGroup') }}
                   </div>
                   <div class="detail-task-list" v-else>
                     <div

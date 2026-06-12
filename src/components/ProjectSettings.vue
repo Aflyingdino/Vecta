@@ -92,7 +92,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
               v-if="activeProject"
               class="settings-mute-btn"
               :class="{ 'settings-mute-btn--active': isProjectMuted }"
-              :title="isProjectMuted ? 'Projectmeldingen inschakelen' : 'Projectmeldingen dempen'"
+              :title="isProjectMuted ? t('enableProjectNotifications') : t('muteProjectNotifications')"
               @click="toggleMuteProject(activeProject.id)"
             >
               <svg v-if="!isProjectMuted" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -102,7 +102,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
               </svg>
-              {{ isProjectMuted ? 'Gedempt' : 'Dempen' }}
+              {{ isProjectMuted ? t('muted') : t('mute') }}
             </button>
             <button class="close-btn" @click="closeSettings">
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -176,12 +176,12 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                       {{ label.name }}
                     </span>
                     <div class="label-row-actions">
-                      <button class="icon-btn" @click="startEdit(label)" title="Bewerken">
+                      <button class="icon-btn" @click="startEdit(label)" :title="t('edit')">
                         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                         </svg>
                       </button>
-                      <button class="icon-btn icon-btn--danger" @click="deleteLabel(label.id)" title="Verwijderen">
+                      <button class="icon-btn icon-btn--danger" @click="deleteLabel(label.id)" :title="t('delete')">
                         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>

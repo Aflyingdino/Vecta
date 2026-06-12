@@ -13,7 +13,7 @@ const currentPlan = computed(() => plans.find((plan) => plan.key === user.subscr
 const nextPlan = computed(() => plans.find((plan) => plan.key === user.subscriptionNextPlan) || null)
 
 function formatDateTime(value) {
-  if (!value) return 'Geen datum'
+  if (!value) return t('noDate')
   const locale = ui.language === 'en' ? 'en-GB' : 'nl-NL'
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
@@ -22,9 +22,9 @@ function formatDateTime(value) {
 }
 
 function planActionLabel(planKey) {
-  if (planKey === user.subscriptionPlan) return 'Huidig plan'
-  if (!user.subscriptionExpiresAt || user.subscriptionPlan === 'free') return 'Direct starten'
-  return 'Inplannen na afloop'
+  if (planKey === user.subscriptionPlan) return t('currentPlan')
+  if (!user.subscriptionExpiresAt || user.subscriptionPlan === 'free') return t('startNow')
+  return t('scheduleAfterExpiry')
 }
 
 async function choosePlan(planKey) {
@@ -42,8 +42,8 @@ async function choosePlan(planKey) {
     <div class="account-page">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Account</h1>
-          <p class="page-sub">Beheer je dabloons-abonnement en planrechten.</p>
+          <h1 class="page-title">{{ t('account') }}</h1>
+          <p class="page-sub">{{ t('accountSub') }}</p>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ async function choosePlan(planKey) {
             <h2>{{ currentPlan.name }}</h2>
             <p class="plan-price">{{ currentPlan.price }}</p>
           </div>
-          <div class="plan-pill">{{ canUseRoles(user.subscriptionPlan) ? 'Rollen aan' : 'Geen rollen' }}</div>
+          <div class="plan-pill">{{ canUseRoles(user.subscriptionPlan) ? t('rolesOn') : t('noRoles') }}</div>
         </div>
         <div class="plan-status">
           <div>

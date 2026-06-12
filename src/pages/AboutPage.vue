@@ -1,5 +1,6 @@
 <script setup>
 import PublicNav from '@/components/PublicNav.vue'
+import { t } from '@/utils/i18n'
 
 const featureList = [
   { label: 'Kanban-borden', desc: 'Aangepaste groepen met sleepbare taakkaarten.' },
@@ -22,9 +23,9 @@ const featureList = [
     <main class="about-content">
 
       <header class="about-header">
-        <div class="about-label">Over ons</div>
+        <div class="about-label">{{ t('aboutUs') }}</div>
         <h1>Vecta</h1>
-        <p class="lead">Een projecttool gebouwd om teams te helpen plannen, volgen en opleveren zonder onnodige complexiteit.</p>
+        <p class="lead">{{ t('aboutLead') }}</p>
       </header>
 
       <section class="about-section">
@@ -35,7 +36,7 @@ const featureList = [
       <section class="about-section">
         <h2>Wat het is</h2>
         <p>In de kern is Vecta een kanban-werkruimte. Je maakt een project, zet groepen op die passen bij je workflow en vult die met taakkaarten. Elke taak kan een label, prioriteit, deadline en reactiereeks hebben.</p>
-        <p class="para-spaced">Projecten hebben rollen, zodat de juiste mensen de juiste toegang hebben. Elk bord kan ook gedeeld worden met een openbare alleen-lezen link.</p>
+        <p class="para-spaced">{{ t('projectsHaveRoles') }}</p>
       </section>
 
       <section class="about-section">
