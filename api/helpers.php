@@ -226,7 +226,28 @@ function normalizeEmail(string $email): string
 
 function validPassword(string $password): bool
 {
-    return trim($password) !== '';
+    $password = trim($password);
+    if ($password === '') {
+        return false;
+    }
+
+    if (strlen($password) < 10) {
+        return false;
+    }
+
+    if (!preg_match('/[A-Z]/', $password)) {
+        return false;
+    }
+
+    if (!preg_match('/[a-z]/', $password)) {
+        return false;
+    }
+
+    if (!preg_match('/\d/', $password)) {
+        return false;
+    }
+
+    return true;
 }
 
 function validColor(?string $color): bool
