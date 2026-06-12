@@ -7,9 +7,10 @@ import { activeProject, addMember, removeMember, updateMemberRole } from '@/stor
 import ColorPicker from './ColorPicker.vue'
 import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
 import { user } from '@/stores/authStore'
+import { t } from '@/utils/i18n'
 
-/* ── Tab state ── */
-const activeTab = ref('labels') // 'labels' | 'members'
+  /* ── Tab state ── */
+  const activeTab = ref('labels') // 'labels' | 'members'
 
 /* ── Label state ── */
 const newName  = ref('')
@@ -122,7 +123,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
                 </svg>
-                Labels
+                {{ t('labels') }}
               </button>
               <button
                 class="tab"
@@ -132,30 +133,30 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                Leden
+                {{ t('membersTitle') }}
               </button>
             </div>
 
             <!-- ══ LABELS TAB ══ -->
             <div v-if="activeTab === 'labels'" class="tab-content">
               <div class="add-label-form">
-                <p class="section-label">Label aanmaken</p>
+                <p class="section-label">{{ t('addLabel') }}</p>
                 <div class="add-label-row">
                   <input
                     v-model="newName"
                     type="text"
                     class="label-name-input"
-                    placeholder="Labelnaam..."
+                    :placeholder="t('labelNamePlaceholder')"
                     @keydown.enter="addLabel"
                   />
                   <ColorPicker v-model="newColor" />
-                  <button class="btn-add" @click="addLabel" :disabled="!newName.trim()">Toevoegen</button>
+                  <button class="btn-add" @click="addLabel" :disabled="!newName.trim()">{{ t('add') }}</button>
                 </div>
               </div>
 
               <div class="label-list">
                 <div v-if="projectLabels.length === 0" class="labels-empty">
-                  Nog geen labels. Maak er hierboven een aan.
+                  {{ t('noLabels') }}
                 </div>
                 <div v-for="label in projectLabels" :key="label.id" class="label-row">
                   <template v-if="editingId === label.id">
@@ -166,8 +167,8 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                       @keydown.escape="editingId = null"
                     />
                     <ColorPicker v-model="editColor" />
-                    <button class="label-action-btn" @click="saveEdit">Opslaan</button>
-                    <button class="label-action-btn" @click="editingId = null">Annuleren</button>
+                    <button class="label-action-btn" @click="saveEdit">{{ t('save') }}</button>
+                    <button class="label-action-btn" @click="editingId = null">{{ t('cancel') }}</button>
                   </template>
                   <template v-else>
                     <span class="label-preview" :style="{ '--lc': label.color }">
@@ -198,30 +199,30 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                 <button
                   class="settings-theme-btn"
                   @click="toggleTheme"
-                  :title="ui.lightMode ? 'Schakel naar donkere modus' : 'Schakel naar lichte modus'"
+                  :title="ui.lightMode ? t('switchToDark') : t('switchToLight')"
                 >
-                  {{ ui.lightMode ? 'Schakel naar donkere modus' : 'Schakel naar lichte modus' }}
+                  {{ ui.lightMode ? t('switchToDark') : t('switchToLight') }}
                 </button>
               </div>
 
               <!-- Invite form -->
               <div class="add-label-form">
-                <p class="section-label">Collega uitnodigen</p>
+                <p class="section-label">{{ t('invite') }}</p>
                 <div class="invite-row">
                   <input
                     v-model="memberEmail"
                     type="email"
                     class="label-name-input"
-                    placeholder="collega@voorbeeld.nl"
+                    :placeholder="t('invitePlaceholder')"
                     @keydown.enter="inviteMember"
                   />
                   <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
                     <option value="admin">Admin</option>
                     <option value="collaborator">Lid</option>
                   </select>
-                  <button class="btn-add" @click="inviteMember">Uitnodigen</button>
+                  <button class="btn-add" @click="inviteMember">{{ t('invite') }}</button>
                 </div>
-                <p v-if="!rolesEnabled" class="member-note">Rollen zijn beschikbaar vanaf Premium+.</p>
+                <p v-if="!rolesEnabled" class="member-note">{{ t('rolesAvailablePremium') }}</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>
               </div>
 
@@ -231,7 +232,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   v-if="!activeProject || activeProject.members.length === 0"
                   class="labels-empty"
                 >
-                  Nog geen leden. Nodig hierboven iemand uit.
+                  {{ t('noMembers') }}
                 </div>
                 <div
                   v-for="m in (activeProject?.members ?? [])"

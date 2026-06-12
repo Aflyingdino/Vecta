@@ -6,6 +6,7 @@ import { isLoggedIn, user, logout } from '@/stores/authStore'
 import { readString, writeString } from '@/utils/safeStorage'
 import { openSettings } from '@/stores/uiStore'
 import { getPlanLabel } from '@/utils/subscriptionPlans'
+import { t } from '@/utils/i18n'
 
 const router = useRouter()
 const route = useRoute()
@@ -22,9 +23,9 @@ const currentProjectId = computed(() =>
 )
 
 const navLinks = [
-  { name: 'dashboard', label: 'Overzicht', icon: 'dashboard' },
-  { name: 'projects',  label: 'Projecten', icon: 'grid' },
-  { name: 'calendar',  label: 'Agenda',    icon: 'calendar' },
+  { name: 'dashboard', labelKey: 'dashboard', icon: 'dashboard' },
+  { name: 'projects',  labelKey: 'projects', icon: 'grid' },
+  { name: 'calendar',  labelKey: 'calendar', icon: 'calendar' },
 ]
 
 function navTarget(link) {
@@ -77,7 +78,7 @@ const userInitials = computed(() => {
 
     <!-- Main nav -->
     <div class="sidebar-section">
-      <p class="section-label" v-if="!collapsed">Menu</p>
+      <p class="section-label" v-if="!collapsed">{{ t('menu') }}</p>
       <router-link
         v-for="link in navLinks"
         :key="link.name"
@@ -104,13 +105,13 @@ const userInitials = computed(() => {
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 20a8 8 0 0116 0" />
         </svg>
-        <span v-if="!collapsed">{{ link.label }}</span>
+        <span v-if="!collapsed">{{ t(link.labelKey) }}</span>
       </router-link>
     </div>
 
     <!-- Projects list -->
     <div class="sidebar-section sidebar-section--projects" v-if="projects.length">
-      <p class="section-label" v-if="!collapsed">Projecten</p>
+      <p class="section-label" v-if="!collapsed">{{ t('projects') }}</p>
       <router-link
         v-for="project in projects"
         :key="project.id"

@@ -2,6 +2,7 @@
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
 import { login, authLoading, authError, clearAuthError } from '@/stores/authStore'
+import { t } from '@/utils/i18n'
 import { fetchProjects } from '@/stores/projectStore'
 
 const router = useRouter()
@@ -68,12 +69,12 @@ async function handleLogin() {
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Bezig met inloggen…' : 'Inloggen' }}
+          {{ authLoading ? t('logInBusy') : t('logIn') }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Nog geen account? <router-link to="/register">Registreren</router-link>
+        {{ t('registerPrompt') }} <router-link to="/register">{{ t('register') }}</router-link>
       </p>
     </div>
   </div>

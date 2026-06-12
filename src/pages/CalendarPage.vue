@@ -6,6 +6,7 @@ import { openTaskDetail } from '@/stores/uiStore'
 import { updateTask } from '@/stores/boardStore'
 import { formatTime } from '@/utils/dates'
 import { APP_LOCALE, PRESET_COLORS } from '@/utils/constants'
+import { t } from '@/utils/i18n'
 
 /* ═══════════════════════════════════════════════
    VIEW MODE
@@ -514,12 +515,12 @@ function deadlineTasksForDay(date) {
       <!-- ── SIDEBAR ── -->
       <aside class="cal-sidebar">
         <div class="sidebar-head">
-          <span class="sidebar-title">Projecten</span>
+          <span class="sidebar-title">{{ t('projects') }}</span>
           <div class="sidebar-sort-row">
-            <select v-model="projectSort" class="sidebar-sort-select" aria-label="Sorteer projecten">
-              <option value="name_asc">Projecten: Naam</option>
-              <option value="tasks_desc">Projecten: Aantal taken</option>
-              <option value="recent_desc">Projecten: Recent actief</option>
+            <select v-model="projectSort" class="sidebar-sort-select" :aria-label="t('sortProjects')">
+              <option value="name_asc">{{ t('projectsByName') }}</option>
+              <option value="tasks_desc">{{ t('projectsByTasks') }}</option>
+              <option value="recent_desc">{{ t('projectsByRecent') }}</option>
             </select>
             <select v-model="taskSort" class="sidebar-sort-select" aria-label="Sorteer taken">
               <option value="recent_desc">Taken: Recent gewijzigd</option>

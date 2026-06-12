@@ -4,6 +4,7 @@ import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
 import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
 import { findTask, addComment, deleteTask, archiveTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
+import { t } from '@/utils/i18n'
 import { user } from '@/stores/authStore'
 import ColorPicker from './ColorPicker.vue'
 import { STATUS_META } from '@/utils/constants'
@@ -314,7 +315,7 @@ function fileIcon(mimeType) {
             <div class="section">
               <span class="section-title">Beschrijving</span>
               <div v-if="task.description" class="description-body">{{ task.description }}</div>
-              <div v-else class="empty-text">Geen beschrijving opgegeven.</div>
+              <div v-else class="empty-text">{{ t('noDescription') }}</div>
             </div>
 
             <!-- Notes -->
@@ -325,7 +326,7 @@ function fileIcon(mimeType) {
                   <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <path d="M12 5v14M5 12h14"/>
                   </svg>
-                  Notitie toevoegen
+                  {{ t('add') }}
                 </button>
               </div>
 
@@ -373,7 +374,7 @@ function fileIcon(mimeType) {
                   </div>
                 </div>
               </div>
-              <div v-else-if="!showNoteForm" class="empty-text">Nog geen notities.</div>
+              <div v-else-if="!showNoteForm" class="empty-text">{{ t('noTasksShort') }}</div>
 
               <!-- Note form (inline) -->
               <div v-if="showNoteForm && canManageNotes" class="note-form">
@@ -421,9 +422,9 @@ function fileIcon(mimeType) {
                   </span>
                 </div>
                 <div class="note-form-actions">
-                  <button class="btn-ghost-sm" @click="resetNoteForm" type="button">Annuleren</button>
+                  <button class="btn-ghost-sm" @click="resetNoteForm" type="button">{{ t('cancel') }}</button>
                   <button class="btn-primary-sm" @click="submitNote" :disabled="!noteForm.title.trim()" type="button">
-                    {{ editingNoteId !== null ? 'Opslaan' : 'Notitie toevoegen' }}
+                    {{ editingNoteId !== null ? t('save') : 'Notitie toevoegen' }}
                   </button>
                 </div>
               </div>
