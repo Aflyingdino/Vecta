@@ -16,11 +16,14 @@ function createSeedState() {
       name: 'Demo gebruiker',
       email: 'demo@vecta.local',
       subscriptionPlan: 'free',
+<<<<<<< HEAD
       subscriptionStartedAt: null,
       subscriptionExpiresAt: null,
       subscriptionNextPlan: null,
       subscriptionNextStartsAt: null,
       subscriptionNextExpiresAt: null,
+=======
+>>>>>>> 248651e4bd9c9ce6b205dd87f3bf06d83f49a1d2
     },
     nextIds: {
       project: 2,

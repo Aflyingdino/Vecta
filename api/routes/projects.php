@@ -46,7 +46,7 @@ function fetchFullProject(int $projectId, string $role): array
 
     // Members
     $stmt = $db->prepare('
-        SELECT u.user_id, u.name, u.email, pm.role
+        SELECT u.user_id, u.name, u.email, u.subscription_plan, pm.role
         FROM project_members pm
         JOIN users u ON u.user_id = pm.user_id
         WHERE pm.project_id = ?
@@ -57,6 +57,7 @@ function fetchFullProject(int $projectId, string $role): array
         'name'  => $r['name'],
         'email' => $r['email'],
         'avatar' => null,
+        'subscriptionPlan' => subscriptionPlanKey($r['subscription_plan'] ?? DEFAULT_SUBSCRIPTION_PLAN),
         'role'  => $r['role'],
     ], $stmt->fetchAll());
 
@@ -182,17 +183,21 @@ function fetchFullProject(int $projectId, string $role): array
             'notes'            => $taskNoteMap[$tid] ?? [],
             'attachments'      => [],
             'comments'         => $taskCommentMap[$tid] ?? [],
+            'archivedAt'       => $r['archived_at'] ?? null,
             'createdAt'        => $r['created_at'],
         ];
     };
 
     // Partition tasks by group
     $tasksByGroup = [];
+    $archivedTasksByGroup = [];
     $backlog = [];
     foreach ($taskRows as $tr) {
         $task = $buildTask($tr);
         if ($tr['group_id'] === null) {
             $backlog[] = $task;
+        } elseif (($tr['archived_at'] ?? null) !== null) {
+            $archivedTasksByGroup[(int)$tr['group_id']][] = $task;
         } else {
             $tasksByGroup[(int)$tr['group_id']][] = $task;
         }
@@ -216,6 +221,7 @@ function fetchFullProject(int $projectId, string $role): array
             'gridRow'     => (int) $gr['grid_row'],
             'gridCol'     => (int) $gr['grid_col'],
             'tasks'       => $tasksByGroup[$gid] ?? [],
+            'archivedTasks' => $archivedTasksByGroup[$gid] ?? [],
         ];
         if ($gr['archived_at'] !== null) {
             $group['archivedAt'] = $gr['archived_at'];
@@ -298,6 +304,16 @@ function handleCreateProject(): never
     $uid  = requireAuth();
     $data = jsonBody();
     requireFields($data, ['name']);
+
+    $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
+    $projectLimit = $plan['limits']['projects'] ?? null;
+    if ($projectLimit !== null) {
+        $stmt = db()->prepare('SELECT COUNT(*) AS cnt FROM project_members pm JOIN projects p ON p.project_id = pm.project_id WHERE pm.user_id = ? AND p.archived_at IS NULL');
+        $stmt->execute([$uid]);
+        if ((int) $stmt->fetch()['cnt'] >= $projectLimit) {
+            jsonError('Your plan does not allow more projects', 403);
+        }
+    }
 
     $db = db();
     $name  = clampString($data['name'], 150);

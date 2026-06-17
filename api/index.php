@@ -56,6 +56,7 @@ function defineRoutes(): array
         route('POST', '/auth/login', static fn() => handleLogin()),
         route('POST', '/auth/logout', static fn() => handleLogout()),
         route('GET', '/auth/me', static fn() => handleMe()),
+        route('PATCH', '/auth/subscription', static fn() => handleUpdateSubscription()),
 
         // Projects
         route('GET', '/projects', static fn() => handleListProjects()),
@@ -89,8 +90,12 @@ function defineRoutes(): array
         route('PATCH', '/tasks/{id}', static fn(array $p) => handleUpdateTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}', static fn(array $p) => handleDeleteTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/move', static fn(array $p) => handleMoveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/archive', static fn(array $p) => handleArchiveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/schedule', static fn(array $p) => handleScheduleTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}/schedule', static fn(array $p) => handleUnscheduleTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/archive', static fn(array $p) => handleArchiveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
 
         // Labels
         route('POST', '/projects/{id}/labels', static fn(array $p) => handleCreateLabel((int) $p['id'])),

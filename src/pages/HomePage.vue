@@ -1,35 +1,36 @@
 <script setup>
 import PublicNav from '@/components/PublicNav.vue'
+import { t } from '@/utils/i18n'
 
 const features = [
   {
-    title: 'Kanban Boards',
-    desc: 'Organize tasks into groups with drag-and-drop between columns.',
+    title: 'Kanban-borden',
+    desc: 'Organiseer taken in groepen met slepen tussen kolommen.',
     icon: 'board',
   },
   {
-    title: 'Labels & Priorities',
-    desc: 'Tag tasks with custom color labels and four priority levels.',
+    title: 'Labels en prioriteiten',
+    desc: 'Label taken met eigen kleuren en vier prioriteitsniveaus.',
     icon: 'label',
   },
   {
-    title: 'Deadlines & Calendar',
-    desc: 'Assign due dates and view all tasks in a monthly calendar.',
+    title: 'Deadlines en agenda',
+    desc: 'Stel deadlines in en bekijk alle taken in een maandweergave.',
     icon: 'calendar',
   },
   {
-    title: 'Comments',
-    desc: 'Discuss tasks with your team directly in the task detail view.',
+    title: 'Reacties',
+    desc: 'Bespreek taken direct met je team in de taakdetails.',
     icon: 'comment',
   },
   {
-    title: 'Public Share Links',
-    desc: 'Share a read-only view of any board with stakeholders via a link.',
+    title: 'Openbare deellinks',
+    desc: 'Deel een alleen-lezen weergave van elk bord met een link.',
     icon: 'share',
   },
   {
-    title: 'Team Roles',
-    desc: 'Invite members as Owner, Admin, or User with scoped permissions.',
+    title: 'Teamrollen',
+    desc: 'Nodig leden uit als Eigenaar, Admin of Lid met rechten per rol.',
     icon: 'team',
   },
 ]
@@ -37,18 +38,18 @@ const features = [
 const steps = [
   {
     n: '01',
-    title: 'Create a project',
-    desc: 'Set up a project, define your board groups, and invite your team with the appropriate roles.',
+    title: 'Maak een project',
+    desc: 'Zet een project op, maak bordgroepen en nodig je team uit met de juiste rollen.',
   },
   {
     n: '02',
-    title: 'Build your board',
-    desc: 'Add tasks, assign labels, set priorities, attach deadlines, and move cards between groups as work progresses.',
+    title: 'Bouw je bord',
+    desc: 'Voeg taken toe, ken labels toe, stel prioriteiten en deadlines in, en verplaats kaarten tussen groepen.',
   },
   {
     n: '03',
-    title: 'Track and share',
-    desc: 'Monitor deadlines in the calendar view and generate a read-only public link for anyone who needs visibility without an account.',
+    title: 'Volg en deel',
+    desc: 'Volg deadlines in de agenda en maak een publieke alleen-lezen link voor kijktoegang zonder account.',
   },
 ]
 </script>
@@ -59,21 +60,19 @@ const steps = [
 
     <!-- Hero -->
     <section class="hero">
-      <h1 class="hero__title">Manage projects<br>without the noise</h1>
-      <p class="hero__subtitle">
-        TaskPilot gives your team kanban boards, deadlines, labels, and comments in one focused workspace.
-      </p>
+      <h1 class="hero__title">{{ t('heroTitle') }}</h1>
+      <p class="hero__subtitle">{{ t('heroSubtitle') }}</p>
       <div class="hero__cta">
-        <router-link to="/register" class="btn btn-primary btn-lg">Get started</router-link>
-        <router-link to="/about" class="btn btn-ghost btn-lg">Learn more</router-link>
+        <router-link to="/register" class="btn btn-primary btn-lg">{{ t('getStarted') }}</router-link>
+        <router-link to="/about" class="btn btn-ghost btn-lg">{{ t('moreInfo') }}</router-link>
       </div>
     </section>
 
     <!-- Features -->
     <section class="features">
       <div class="features__inner">
-        <div class="section-label">Features</div>
-        <h2 class="section-title">Everything your team needs</h2>
+        <div class="section-label">{{ t('features') }}</div>
+        <h2 class="section-title">{{ t('featuresTitle') }}</h2>
         <div class="features__grid">
           <div class="feature-card" v-for="f in features" :key="f.title">
             <div class="feature-icon">
@@ -96,8 +95,8 @@ const steps = [
     <!-- How it works -->
     <section class="how">
       <div class="how__inner">
-        <div class="section-label">How it works</div>
-        <h2 class="section-title">Up and running in minutes</h2>
+        <div class="section-label">Zo werkt het</div>
+        <h2 class="section-title">Binnen enkele minuten gestart</h2>
         <div class="how__steps">
           <div class="step" v-for="s in steps" :key="s.n">
             <span class="step__n">{{ s.n }}</span>
@@ -112,7 +111,7 @@ const steps = [
 
     <!-- Footer -->
     <footer class="home-footer">
-      <p>2026 TaskPilot &nbsp;&middot;&nbsp; <router-link to="/about">About</router-link> &nbsp;&middot;&nbsp; <router-link to="/contact">Contact</router-link></p>
+      <p>2026 Vecta &nbsp;&middot;&nbsp; <router-link to="/about">Over ons</router-link> &nbsp;&middot;&nbsp; <router-link to="/contact">Contact</router-link></p>
     </footer>
   </div>
 </template>

@@ -1,25 +1,26 @@
 <script setup>
 import { isLoggedIn } from '@/stores/authStore'
+import { t } from '@/utils/i18n'
 </script>
 
 <template>
   <header class="pub-nav">
     <router-link to="/" class="pub-brand">
-      <img src="/logo.png" alt="TaskPilot logo" width="26" height="26" />
-      <span>TaskPilot</span>
+      <img src="/logo.png" alt="Vecta logo" width="26" height="26" />
+      <span>Vecta</span>
     </router-link>
 
     <nav class="pub-links">
       <router-link to="/" exact-active-class="pub-link--active" class="pub-link">Home</router-link>
-      <router-link to="/about" active-class="pub-link--active" class="pub-link">About</router-link>
-      <router-link to="/contact" active-class="pub-link--active" class="pub-link">Contact</router-link>
+      <router-link to="/about" active-class="pub-link--active" class="pub-link">{{ t('about') }}</router-link>
+      <router-link to="/contact" active-class="pub-link--active" class="pub-link">{{ t('contact') }}</router-link>
 
       <template v-if="!isLoggedIn">
-        <router-link to="/login" class="pub-btn pub-btn--ghost">Log in</router-link>
-        <router-link to="/register" class="pub-btn pub-btn--primary">Get started</router-link>
+        <router-link to="/login" class="pub-btn pub-btn--ghost">{{ t('logIn') }}</router-link>
+        <router-link to="/register" class="pub-btn pub-btn--primary">{{ t('getStarted') }}</router-link>
       </template>
       <template v-else>
-        <router-link to="/projects" class="pub-btn pub-btn--primary">Open app</router-link>
+        <router-link to="/projects" class="pub-btn pub-btn--primary">{{ t('openApp') }}</router-link>
       </template>
     </nav>
   </header>

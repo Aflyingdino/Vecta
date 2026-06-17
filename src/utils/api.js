@@ -17,13 +17,11 @@ function withoutTrailingSlash(value) {
 }
 
 const BASE = withoutTrailingSlash(withLeadingSlash(envApiBase || DEFAULT_API_BASE))
-const FALLBACK_BASE = BASE
 const CSRF_HEADER = 'X-CSRF-Token'
 const PLAN_KEYS = new Set(['free', 'standard', 'premium', 'premium_plus', 'enterprise'])
 
 let csrfToken = null
 let csrfPromise = null
-let useFallbackRouting = false
 
 <<<<<<< Updated upstream
 =======
@@ -572,9 +570,6 @@ async function handleDemoRequest(path, options = {}) {
 
 >>>>>>> Stashed changes
 function buildUrl(path) {
-  if (useFallbackRouting) {
-    return `${FALLBACK_BASE}?route=${encodeURIComponent(path)}`
-  }
   return `${BASE}${path}`
 }
 
@@ -592,12 +587,6 @@ async function fetchCsrfToken(forceRefresh = false) {
       credentials: 'include',
       headers: { Accept: 'application/json' },
     })
-
-    // Auto-switch to query fallback if path-info routing is unavailable.
-    if (!useFallbackRouting && res.status === 404) {
-      useFallbackRouting = true
-      return run()
-    }
 
     const data = await parseJson(res)
     if (!res.ok || !data.token) {
@@ -631,11 +620,6 @@ async function request(path, options = {}, allowRetry = true) {
     credentials: 'include',
     ...options,
   })
-
-  if (!useFallbackRouting && res.status === 404) {
-    useFallbackRouting = true
-    return request(path, options, allowRetry)
-  }
 
   if (res.status === 204) return null
 

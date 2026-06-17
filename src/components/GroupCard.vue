@@ -3,18 +3,19 @@ import { ref, computed, nextTick } from 'vue'
 import TaskCard from './TaskCard.vue'
 import ColorPicker from './ColorPicker.vue'
 import {
-  moveTaskToGroup, deleteTask, renameGroup, deleteGroup, archiveGroup,
+  moveTaskToGroup, deleteTask, renameGroup, deleteGroup, archiveGroup, restoreTask, archiveTask,
   updateGroup, projectLabels, createTask,
 } from '@/stores/boardStore'
 import { toggleMuteGroup, mutedGroupIds } from '@/stores/notificationStore'
 import { PRIORITY_OPTIONS, STATUS_OPTIONS, STATUS_META } from '@/utils/constants'
 import { formatShortDate } from '@/utils/dates'
+import { t } from '@/utils/i18n'
 
 const props = defineProps({
   group: { type: Object, required: true },
 })
 
-const emit = defineEmits(['openDetail', 'groupDragStart'])
+const emit = defineEmits(['openDetail', 'groupDragStart', 'groupDrop'])
 
 const isEditing       = ref(false)
 const editName        = ref('')
@@ -24,6 +25,7 @@ const dragCounter     = ref(0)
 const collapsed       = ref(false)
 const confirmingArchive = ref(false)
 const confirmingDelete  = ref(false)
+const showArchivedTasks = ref(false)
 
 /* ── Add task inline ── */
 const showTaskInput = ref(false)
@@ -36,11 +38,25 @@ async function openTaskInput() {
   await nextTick()
   taskInput.value?.focus()
 }
-function submitTask() {
+async function submitTask() {
+  if (!props.group?.id) {
+    console.error('Group not found')
+    return
+  }
+  
   const t = taskText.value.trim()
-  if (t) createTask({ text: t }, 'group', props.group.id)
-  showTaskInput.value = false
-  taskText.value = ''
+  if (!t) {
+    return
+  }
+  
+  try {
+    await createTask({ text: t }, 'group', props.group.id)
+    showTaskInput.value = false
+    taskText.value = ''
+  } catch (err) {
+    console.error('Failed to create task:', err)
+    // Keep input open so user can retry
+  }
 }
 function cancelTask() { showTaskInput.value = false; taskText.value = '' }
 
@@ -114,7 +130,11 @@ function onDragEnter(e) {
   }
 }
 function onDragOver(e) {
-  if (e.dataTransfer.types.includes('application/task-id')) e.preventDefault()
+  const types = e.dataTransfer.types
+  if (types.includes('application/task-id') || types.includes('application/group-id')) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
 }
 function onDragLeave(e) {
   if (e.dataTransfer.types.includes('application/task-id')) {
@@ -124,15 +144,35 @@ function onDragLeave(e) {
 }
 function onDrop(e) {
   dragCounter.value = 0; isDragOver.value = false
+  const types = e.dataTransfer.types
+  if (types.includes('application/group-id')) {
+    e.preventDefault()
+    e.stopPropagation()
+    emit('groupDrop', props.group.id)
+    return
+  }
   const taskId = Number(e.dataTransfer.getData('application/task-id'))
   if (taskId) { moveTaskToGroup(taskId, props.group.id); e.stopPropagation() }
 }
 function onGroupDragStart(e) {
   e.dataTransfer.effectAllowed = 'move'
-  e.dataTransfer.setData('application/group-id', String(props.group.id))
+  const gid = String(props.group.id)
+  e.dataTransfer.setData('application/group-id', gid)
+  e.dataTransfer.setData('groupId', gid)
+  try {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ groupId: Number(gid) }))
+  } catch {}
   emit('groupDragStart', props.group.id)
 }
 function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) }
+function handleArchiveTask(taskId) {
+  archiveTask(taskId, 'group', props.group.id)
+  showArchivedTasks.value = true
+}
+function handleRestoreTask(taskId) { restoreTask(taskId, props.group.id) }
+function handleDeleteArchivedTask(taskId) { deleteTask(taskId, 'archived-group', props.group.id) }
+
+const archivedTasks = computed(() => props.group.archivedTasks ?? [])
 </script>
 
 <template>
@@ -152,8 +192,8 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
         class="col-icon-btn col-drag-handle"
         draggable="true"
         @dragstart="onGroupDragStart"
-        title="Drag to reorder"
-        aria-label="Drag to reorder group"
+        :title="t('dragToReorder')"
+        :aria-label="t('dragToReorder')"
       >
         <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
@@ -176,7 +216,7 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           class="col-name"
           @click="emit('openDetail', group.id)"
           @dblclick.stop="startRename"
-          title="Click for detail · Double-click to rename"
+          :title="t('clickForDetailsDoubleClickRename')"
         >{{ group.name }}</h3>
         <input
           v-else
@@ -218,50 +258,50 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           class="col-icon-btn"
           :class="{ 'col-icon-btn--active': collapsed }"
           @click.stop="collapsed = !collapsed; confirmingArchive = false; confirmingDelete = false"
-          :title="collapsed ? 'Expand group' : 'Collapse group'"
+          :title="collapsed ? t('expandGroup') : t('collapseGroup')"
         >
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" :d="collapsed ? 'M19 9l-7 7-7-7' : 'M5 15l7-7 7 7'" />
           </svg>
         </button>
         <!-- Open detail -->
-        <button class="col-icon-btn" @click.stop="emit('openDetail', group.id)" title="Open group detail">
+        <button class="col-icon-btn" @click.stop="emit('openDetail', group.id)" :title="t('openGroupDetails')">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
           </svg>
         </button>
         <!-- Archive (with confirm) -->
         <template v-if="confirmingArchive">
-          <span class="col-confirm-text">Archive?</span>
-          <button class="col-icon-btn col-icon-btn--confirm-yes" @click.stop="archiveGroup(group.id)" title="Yes, archive">
+          <span class="col-confirm-text">{{ t('archiveConfirm') }}</span>
+          <button class="col-icon-btn col-icon-btn--confirm-yes" @click.stop="archiveGroup(group.id)" :title="t('archiveYes')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>
-          <button class="col-icon-btn" @click.stop="confirmingArchive = false" title="Cancel">
+          <button class="col-icon-btn" @click.stop="confirmingArchive = false" :title="t('cancel')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </template>
-        <button v-else class="col-icon-btn col-icon-btn--archive" @click.stop="confirmingArchive = true" title="Archive group">
+        <button v-else class="col-icon-btn col-icon-btn--archive" @click.stop="confirmingArchive = true" :title="t('archiveGroup')">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
           </svg>
         </button>
         <!-- Delete (with confirm) -->
         <template v-if="confirmingDelete">
-          <span class="col-confirm-text col-confirm-text--danger">Delete?</span>
-          <button class="col-icon-btn col-icon-btn--danger" @click.stop="deleteGroup(group.id)" title="Yes, delete">
+          <span class="col-confirm-text col-confirm-text--danger">{{ t('deleteConfirm') }}</span>
+          <button class="col-icon-btn col-icon-btn--danger" @click.stop="deleteGroup(group.id)" :title="t('confirmYes')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>
-          <button class="col-icon-btn" @click.stop="confirmingDelete = false" title="Cancel">
+          <button class="col-icon-btn" @click.stop="confirmingDelete = false" :title="t('cancel')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </template>
-        <button v-else class="col-icon-btn col-icon-btn--danger" @click.stop="confirmingDelete = true" title="Delete group">
+        <button v-else class="col-icon-btn col-icon-btn--danger" @click.stop="confirmingDelete = true" :title="t('deleteGroup')">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
           </svg>
         </button>
         <!-- Meta / settings -->
-        <button class="col-icon-btn" :class="{ 'col-icon-btn--active': metaOpen }" @click.stop="openMeta" title="Group settings">
+        <button class="col-icon-btn" :class="{ 'col-icon-btn--active': metaOpen }" @click.stop="openMeta" :title="t('groupSettings')">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path stroke-linecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -272,7 +312,7 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           class="col-icon-btn"
           :class="{ 'col-icon-btn--muted': isGroupMuted }"
           @click.stop="toggleMuteGroup(group.id)"
-          :title="isGroupMuted ? 'Unmute notifications' : 'Mute notifications'"
+          :title="isGroupMuted ? t('enableNotifications') : t('muteNotifications')"
         >
           <svg v-if="!isGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -289,43 +329,43 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
     <Transition name="fade">
       <div v-if="metaOpen && !collapsed" class="col-meta-panel">
         <div class="meta-panel-hdr">
-          <span class="meta-panel-title">Group settings</span>
-          <button class="meta-back-btn" @click="metaOpen = false" title="Close settings">
+          <span class="meta-panel-title">{{ t('groupSettings') }}</span>
+          <button class="meta-back-btn" @click="metaOpen = false" :title="t('closeSettings')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>
           </button>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Description</label>
-          <textarea v-model="metaForm.description" class="meta-input meta-textarea" rows="2" placeholder="Group description…" />
+          <label class="meta-label">{{ t('description') }}</label>
+          <textarea v-model="metaForm.description" class="meta-input meta-textarea" rows="2" :placeholder="t('groupDescriptionPlaceholder')" />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Status</label>
+          <label class="meta-label">{{ t('status') }}</label>
           <select v-model="metaForm.status" class="meta-input meta-select">
             <option v-for="s in STATUS_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </select>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Priority</label>
+          <label class="meta-label">{{ t('priority') }}</label>
           <select v-model="metaForm.priority" class="meta-input meta-select">
             <option v-for="p in PRIORITY_OPTIONS" :key="p.value" :value="p.value">{{ p.label }}</option>
           </select>
         </div>
         <div class="meta-field">
-          <label class="meta-label">Deadline</label>
+          <label class="meta-label">{{ t('deadline') }}</label>
           <input v-model="metaForm.deadline" type="date" class="meta-input" />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Main color (background tint)</label>
+          <label class="meta-label">{{ t('mainColor') }}</label>
           <ColorPicker v-model="metaForm.mainColor" small />
         </div>
         <div class="meta-field">
-          <label class="meta-label">Accent color (border)</label>
+          <label class="meta-label">{{ t('accentColor') }}</label>
           <ColorPicker v-model="metaForm.color" small />
         </div>
         <div class="meta-field" v-if="projectLabels.length">
-          <label class="meta-label">Labels</label>
+          <label class="meta-label">{{ t('labels') }}</label>
           <div class="meta-labels">
             <button
               v-for="l in projectLabels"
@@ -339,8 +379,8 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           </div>
         </div>
         <div class="meta-actions">
-          <button class="meta-btn-cancel" @click="metaOpen = false">Cancel</button>
-          <button class="meta-btn-save" @click="saveMeta">Save</button>
+          <button class="meta-btn-cancel" @click="metaOpen = false">{{ t('cancel') }}</button>
+          <button class="meta-btn-save" @click="saveMeta">{{ t('save') }}</button>
         </div>
       </div>
     </Transition>
@@ -352,9 +392,29 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
           v-for="task in group.tasks"
           :key="task.id"
           :task="task"
+          source="group"
           @delete="handleDeleteTask"
+          @archive="handleArchiveTask"
         />
       </TransitionGroup>
+
+      <div v-if="archivedTasks.length" class="archived-tasks-wrap">
+          <button class="archived-toggle" @click="showArchivedTasks = !showArchivedTasks">
+          <span>{{ t('archivedTasks') }} ({{ archivedTasks.length }})</span>
+          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" :class="{ 'archived-toggle__icon--open': showArchivedTasks }">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+        <div v-if="showArchivedTasks" class="archived-list">
+          <div v-for="task in archivedTasks" :key="task.id" class="archived-item">
+            <span class="archived-item__text">{{ task.text }}</span>
+            <div class="archived-item__actions">
+              <button class="archived-btn" @click="handleRestoreTask(task.id)">{{ t('restore') }}</button>
+              <button class="archived-btn archived-btn--danger" @click="handleDeleteArchivedTask(task.id)">{{ t('delete') }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Add task -->
       <div class="add-task-area">
@@ -364,20 +424,20 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
               ref="taskInput"
               v-model="taskText"
               class="task-input"
-              placeholder="Task name…"
+              :placeholder="t('taskNamePlaceholder')"
               @keydown.enter="submitTask"
               @keydown.escape="cancelTask"
             />
             <div class="add-task-actions">
-              <button @click="submitTask" class="btn-add-confirm">Add</button>
-              <button @click="cancelTask" class="btn-add-cancel">Cancel</button>
+              <button @click="submitTask" class="btn-add-confirm">{{ t('add') }}</button>
+              <button @click="cancelTask" class="btn-add-cancel">{{ t('cancel') }}</button>
             </div>
           </div>
           <button v-else key="btn" class="add-task-btn" @click="openTaskInput">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
-            Add task
+            {{ t('addTask') }}
           </button>
         </Transition>
       </div>
@@ -385,8 +445,8 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
 
     <!-- Drop hint -->
     <div class="drop-hint" :class="{ 'drop-hint--over': isDragOver }">
-      Drop task here
-    </div>
+        {{ t('dropTaskHere') }}
+      </div>
   </div>
 </template>
 
@@ -633,6 +693,76 @@ function handleDeleteTask(taskId) { deleteTask(taskId, 'group', props.group.id) 
   min-height: 0;
 }
 .task-list { display: contents; }
+
+.archived-tasks-wrap {
+  border-top: 1px solid var(--color-border-sub);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.archived-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-3);
+  color: var(--color-text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.archived-toggle__icon--open {
+  transform: rotate(90deg);
+}
+
+.archived-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.archived-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-sub);
+  background: var(--color-surface-1);
+}
+
+.archived-item__text {
+  font-size: 12px;
+  color: var(--color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archived-item__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.archived-btn {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-2);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.archived-btn--danger {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
 
 /* ── Add task ── */
 .add-task-area { padding-bottom: 8px; }

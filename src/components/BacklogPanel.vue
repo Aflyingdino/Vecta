@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { t } from '@/utils/i18n'
 import TaskCard from './TaskCard.vue'
 import { backlog, deleteTask, moveTaskToBacklog } from '@/stores/boardStore'
 import { openCreateTask } from '@/stores/uiStore'
@@ -52,7 +53,7 @@ function onDrop(e) {
     @drop="onDrop"
     :class="{ 'panel--over': isDragOver }"
   >
-    <button class="mini-expand-btn" @click="collapsed = false" title="Expand backlog" aria-label="Expand backlog">
+    <button class="mini-expand-btn" @click="collapsed = false" title="Backlog uitklappen" aria-label="Backlog uitklappen">
       <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
       </svg>
@@ -74,26 +75,26 @@ function onDrop(e) {
     <!-- Header -->
     <div class="panel-header">
       <div class="panel-title-row">
-        <span class="panel-title">Backlog</span>
+        <span class="panel-title">{{ t('backlog') }}</span>
         <div class="panel-title-right">
           <span class="badge">{{ backlog.length }}</span>
-          <button class="collapse-btn" @click="collapsed = true" title="Minimize backlog" aria-label="Minimize backlog">
+          <button class="collapse-btn" @click="collapsed = true" title="Backlog inklappen" aria-label="Backlog inklappen">
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
       </div>
-      <p class="panel-subtitle">Drag tasks onto a group</p>
+      <p class="panel-subtitle">{{ t('dragTasksToGroup') }}</p>
     </div>
 
     <!-- Add task -->
     <div class="panel-input-area">
-      <button class="add-task-btn" @click="openCreateTask">
+    <button class="add-task-btn" @click="openCreateTask">
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
-        New task
+        {{ t('newTask') }}
       </button>
     </div>
 
@@ -113,8 +114,8 @@ function onDrop(e) {
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h4.5M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
-        <p>No tasks yet</p>
-        <span>Click "New task" to get started</span>
+        <p>{{ t('noTasksShort') }}</p>
+        <span>{{ t('clickNewTask') }}</span>
       </div>
     </div>
   </aside>

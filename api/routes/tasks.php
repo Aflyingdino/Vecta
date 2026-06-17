@@ -180,6 +180,32 @@ function handleMoveTask(int $taskId): never
     jsonResponse(buildTaskResponse($taskId));
 }
 
+function handleArchiveTask(int $taskId): never
+{
+    $uid  = requireAuth();
+    $task = resolveTask($taskId, $uid);
+
+    db()->prepare('UPDATE tasks SET archived_at = NOW() WHERE task_id = ?')
+        ->execute([$taskId]);
+
+    logActivity((int)$task['project_id'], $uid, 'task_archived', "Task \"{$task['title']}\" archived");
+
+    jsonResponse(buildTaskResponse($taskId));
+}
+
+function handleRestoreTask(int $taskId): never
+{
+    $uid  = requireAuth();
+    $task = resolveTask($taskId, $uid);
+
+    db()->prepare('UPDATE tasks SET archived_at = NULL WHERE task_id = ?')
+        ->execute([$taskId]);
+
+    logActivity((int)$task['project_id'], $uid, 'task_restored', "Task \"{$task['title']}\" restored");
+
+    jsonResponse(buildTaskResponse($taskId));
+}
+
 function handleScheduleTask(int $taskId): never
 {
     $uid  = requireAuth();
@@ -190,6 +216,19 @@ function handleScheduleTask(int $taskId): never
     $duration = array_key_exists('calendarDuration', $data) && $data['calendarDuration'] !== null
         ? requireBoundedInt($data['calendarDuration'], 'calendarDuration', 1, 10080)
         : null;
+
+    if ($start !== null) {
+        $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
+        $limitDays = $plan['limits']['planningWindowDays'] ?? null;
+        if ($limitDays !== null) {
+            $now = new DateTimeImmutable('now');
+            $scheduled = new DateTimeImmutable($start);
+            $max = $now->modify('+' . $limitDays . ' days');
+            if ($scheduled > $max) {
+                jsonError('Your plan does not allow planning that far ahead', 403);
+            }
+        }
+    }
 
     db()->prepare('UPDATE tasks SET scheduled_start = ?, duration_minutes = ? WHERE task_id = ?')
         ->execute([$start, $duration, $taskId]);
@@ -332,6 +371,8 @@ function buildTaskResponse(int $taskId): array
         'notes'            => $notes,
         'attachments'      => [],
         'comments'         => $comments,
+        'archivedAt'       => $t['archived_at'] ?? null,
         'createdAt'        => $t['created_at'],
+        'archivedAt'       => $t['archived_at'],
     ];
 }

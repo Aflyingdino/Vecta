@@ -38,23 +38,49 @@ function toggleLabel(labelId) {
   else form.value.labelIds.splice(idx, 1)
 }
 
-function submit() {
-  if (!form.value.text.trim()) return
+async function submit() {
+  const text = form.value.text.trim()
+  const desc = form.value.description.trim()
+  
+  // Validate text
+  if (!text) return
+  
+  // Validate status
+  if (!STATUS_OPTIONS.find(s => s.value === form.value.status)) {
+    console.error('Invalid status selected')
+    return
+  }
+  
+  // Validate deadline if provided
+  if (form.value.deadline) {
+    const d = new Date(form.value.deadline)
+    if (isNaN(d.getTime())) {
+      console.error('Invalid deadline date')
+      return
+    }
+  }
+  
   const data = {
-    text: form.value.text.trim(),
-    description: form.value.description,
+    text,
+    description: desc,
     status: form.value.status,
     deadline: form.value.deadline || null,
     labelIds: [...form.value.labelIds],
     mainColor: form.value.mainColor || null,
     color: form.value.color || null,
   }
-  if (isEdit.value) {
-    updateTask(ui.editTaskId, data)
-  } else {
-    createTask(data)
+  
+  try {
+    if (isEdit.value) {
+      await updateTask(ui.editTaskId, data)
+    } else {
+      await createTask(data)
+    }
+    closeTaskModal()
+  } catch (err) {
+    console.error('Failed to save task:', err)
+    // Keep modal open so user can retry
   }
-  closeTaskModal()
 }
 </script>
 

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
+import { t } from '@/utils/i18n'
 
 const props = defineProps({
   project: { type: Object, required: true },
@@ -24,7 +25,7 @@ const progress = computed(() => {
   return Math.round((doneTasks.value / totalTasks.value) * 100)
 })
 
-const ROLE_LABEL = { owner: 'Owner', admin: 'Admin', collaborator: 'Member' }
+const ROLE_LABEL = { owner: 'Eigenaar', admin: 'Admin', collaborator: 'Lid' }
 
 const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id))
 </script>
@@ -46,7 +47,7 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
         <button
           class="card-delete"
           @click.prevent="emit('delete', project.id)"
-          title="Delete project"
+          title="Project verwijderen"
         >
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -56,7 +57,7 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
           class="card-mute"
           :class="{ 'card-mute--active': isProjectMuted }"
           @click.prevent="toggleMuteProject(project.id)"
-          :title="isProjectMuted ? 'Unmute notifications' : 'Mute notifications'"
+          :title="isProjectMuted ? t('enableNotifications') : t('muteNotifications')"
         >
           <svg v-if="!isProjectMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -68,20 +69,20 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
         </button>
       </div>
 
-      <p class="card-desc">{{ project.description || 'No description' }}</p>
+      <p class="card-desc">{{ project.description || t('noDescription') }}</p>
 
       <div class="card-stats">
         <span class="stat">
           <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          {{ totalTasks }} task{{ totalTasks !== 1 ? 's' : '' }}
+          {{ totalTasks }} {{ totalTasks !== 1 ? t('tasks') : t('task') }}
         </span>
         <span class="stat">
           <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          {{ project.members.length }} member{{ project.members.length !== 1 ? 's' : '' }}
+          {{ project.members.length }} {{ project.members.length !== 1 ? t('members') : t('member') }}
         </span>
       </div>
 
@@ -90,7 +91,7 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
         <div class="progress-bar">
           <div class="progress-fill" :style="{ width: progress + '%', background: project.color }"></div>
         </div>
-        <span class="progress-label">{{ progress }}% done</span>
+        <span class="progress-label">{{ progress }}% {{ t('done') }}</span>
       </div>
     </div>
   </router-link>
@@ -148,7 +149,8 @@ const isProjectMuted = computed(() => mutedProjectIds.value.has(props.project.id
 }
 .card-role--owner { background: color-mix(in srgb, #f5c842 15%, transparent); color: #f5c842; }
 .card-role--admin  { background: color-mix(in srgb, #5b5bd6 15%, transparent); color: #5b5bd6; }
-.card-role--user   { background: var(--color-surface-3); color: var(--color-text-2); }
+.card-role--user,
+.card-role--collaborator { background: var(--color-surface-3); color: var(--color-text-2); }
 
 .card-delete {
   flex-shrink: 0;

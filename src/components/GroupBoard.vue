@@ -7,6 +7,7 @@ import { formatLongDate, formatShortDate } from '@/utils/dates'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, STATUS_META } from '@/utils/constants'
 import { openTaskDetail } from '@/stores/uiStore'
 import { toggleMuteGroup, mutedGroupIds } from '@/stores/notificationStore'
+import { t } from '@/utils/i18n'
 
 const isDetailGroupMuted = computed(() => detailGroupId.value != null && mutedGroupIds.value.has(detailGroupId.value))
 
@@ -130,6 +131,14 @@ function onCellDrop(cell) {
   draggingId.value = null
   overCell.value = null
 }
+function onGroupDrop(targetGroupId) {
+  if (!draggingId.value || draggingId.value === targetGroupId) return
+  const targetGroup = groups.value.find(g => g.id === targetGroupId)
+  if (!targetGroup) return
+  moveGroupToGrid(draggingId.value, targetGroup.gridRow ?? 0, targetGroup.gridCol ?? 0)
+  draggingId.value = null
+  overCell.value = null
+}
 function onDragEnd() {
   draggingId.value = null
   overCell.value = null
@@ -149,7 +158,7 @@ function onDragEnd() {
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
-          Board
+          {{ t('board') }}
         </button>
         <button
           class="board-tab"
@@ -159,7 +168,7 @@ function onDragEnd() {
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
           </svg>
-          Archive
+          {{ t('archive') }}
           <span v-if="archivedGroups.length" class="archive-badge">{{ archivedGroups.length }}</span>
         </button>
       </div>
@@ -170,21 +179,21 @@ function onDragEnd() {
               ref="nameInput"
               v-model="groupName"
               class="tabs-add-input"
-              placeholder="Group name…"
+              :placeholder="t('groupNamePlaceholder')"
               maxlength="30"
               @keydown.enter="submitGroup"
               @keydown.escape="cancelCreate"
             />
-            <button class="tabs-add-confirm" @click="submitGroup">Create</button>
+            <button class="tabs-add-confirm" @click="submitGroup">{{ t('create') }}</button>
             <button class="tabs-add-cancel" @click="cancelCreate">
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <button v-else key="btn" class="tabs-add-btn" @click="openNameInput" title="Add group">
+          <button v-else key="btn" class="tabs-add-btn" @click="openNameInput" title="Groep toevoegen">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Add group
+            {{ t('addGroup') }}
           </button>
         </Transition>
       </div>
@@ -193,7 +202,7 @@ function onDragEnd() {
     <!-- ══ BOARD VIEW ══ -->
     <div v-if="activeTab === 'board'" class="board" :class="{ 'board--dragging': !!draggingId }" @dragend="onDragEnd">
       <div v-if="groups.length === 0" class="board-empty">
-        <p>No groups yet. Click <strong>Add group</strong> in the toolbar above to get started.</p>
+        <p v-html="t('noGroups')"></p>
       </div>
 
       <!-- Column-of-columns layout: each column is an independent flex stack so
@@ -223,6 +232,7 @@ function onDragEnd() {
               :group="cell.group"
               @openDetail="openGroupDetail"
               @groupDragStart="draggingId = $event"
+              @groupDrop="onGroupDrop"
             />
             <!-- Ghost placeholder: shown on every valid empty cell while dragging -->
             <div
@@ -233,7 +243,7 @@ function onDragEnd() {
               <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/>
               </svg>
-              <span>Move here</span>
+              <span>{{ t('dropHere') }}</span>
             </div>
             <!-- Empty drop zone -->
             <div v-else class="empty-cell" />
@@ -248,8 +258,8 @@ function onDragEnd() {
         <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
         </svg>
-        <p>No archived groups</p>
-        <span>Archive a group using the ⤓ button on any group header.</span>
+        <p>{{ t('noArchivedGroups') }}</p>
+        <span>Archiveer een groep met de ⤓-knop op een groepstitel.</span>
       </div>
 
       <TransitionGroup name="archive-list" tag="div" class="archive-list" v-else>
@@ -259,28 +269,28 @@ function onDragEnd() {
             <div class="archive-card-info">
               <div class="archive-card-name-row">
                 <span class="archive-card-name">{{ group.name }}</span>
-                <span class="archive-card-count">{{ group.tasks.length }} task{{ group.tasks.length !== 1 ? 's' : '' }}</span>
+                <span class="archive-card-count">{{ group.tasks.length }} taak{{ group.tasks.length !== 1 ? 'en' : '' }}</span>
               </div>
               <p v-if="group.description" class="archive-card-desc">{{ group.description }}</p>
-              <span class="archive-card-date">Archived {{ formatLongDate(group.archivedAt) }}</span>
+              <span class="archive-card-date">Gearchiveerd {{ formatLongDate(group.archivedAt) }}</span>
             </div>
             <!-- Task preview -->
             <div class="archive-task-preview" v-if="group.tasks.length">
               <span v-for="t in group.tasks.slice(0, 4)" :key="t.id" class="archive-task-pill">{{ t.text }}</span>
-              <span v-if="group.tasks.length > 4" class="archive-task-more">+{{ group.tasks.length - 4 }} more</span>
+              <span v-if="group.tasks.length > 4" class="archive-task-more">+{{ group.tasks.length - 4 }} meer</span>
             </div>
             <div class="archive-card-actions">
               <button class="arch-btn arch-btn--restore" @click="restoreGroup(group.id)">
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                 </svg>
-                Restore
+                Herstellen
               </button>
               <button class="arch-btn arch-btn--delete" @click="deleteArchivedGroup(group.id)">
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                 </svg>
-                Delete permanently
+                Definitief verwijderen
               </button>
             </div>
           </div>
@@ -295,12 +305,12 @@ function onDragEnd() {
           <div class="group-detail-panel">
             <!-- Panel header -->
             <div class="group-detail-hdr">
-              <span class="group-detail-hdr-label">Group detail</span>
+              <span class="group-detail-hdr-label">Groepsdetails</span>
               <div class="group-detail-hdr-actions">
                 <button
                   class="group-detail-mute"
                   :class="{ 'group-detail-mute--active': isDetailGroupMuted }"
-                  :title="isDetailGroupMuted ? 'Unmute notifications' : 'Mute notifications'"
+                  :title="isDetailGroupMuted ? t('enableNotifications') : t('muteNotifications')"
                   @click="toggleMuteGroup(detailGroupId)"
                 >
                   <svg v-if="!isDetailGroupMuted" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -311,7 +321,7 @@ function onDragEnd() {
                     <line x1="3" y1="3" x2="21" y2="21" stroke-linecap="round"/>
                   </svg>
                 </button>
-                <button class="group-detail-close" @click="closeDetail" aria-label="Close">
+                <button class="group-detail-close" @click="closeDetail" aria-label="Sluiten">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
               </div>
@@ -354,16 +364,16 @@ function onDragEnd() {
                     </span>
                     <span class="detail-meta-item">
                       <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                      {{ detailGroup.tasks.length }} task{{ detailGroup.tasks.length !== 1 ? 's' : '' }}
+                      {{ detailGroup.tasks.length }} {{ t('tasks') }}
                     </span>
                   </div>
                 </div>
 
                 <!-- Tasks -->
                 <div class="detail-tasks-section">
-                  <div class="detail-section-title">Tasks</div>
+                  <div class="detail-section-title">{{ t('tasks') }}</div>
                   <div v-if="detailGroup.tasks.length === 0" class="detail-empty">
-                    No tasks in this group yet.
+                    {{ t('noTasksInGroup') }}
                   </div>
                   <div class="detail-task-list" v-else>
                     <div
