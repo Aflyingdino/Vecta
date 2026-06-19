@@ -39,17 +39,18 @@ function loadEnvFile(string $path): void
         }
 
         $length = strlen($value);
+        $isQuoted = false;
         if ($length >= 2) {
             $first = $value[0];
             $last = $value[$length - 1];
             if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
                 $value = substr($value, 1, -1);
+                $isQuoted = true;
             }
-        } else {
-            $commentPos = strpos($value, '#');
-            if ($commentPos !== false) {
-                $value = rtrim(substr($value, 0, $commentPos));
-            }
+        }
+
+        if (!$isQuoted) {
+            $value = preg_replace('/\s+#.*$/', '', $value) ?? $value;
         }
 
         putenv("$key=$value");
