@@ -126,27 +126,6 @@ export async function updateMemberRole(projectId, memberId, role) {
   if (m) m.role = role
 }
 
-/* ─── Share link ─────────────────────────── */
-
-export async function generateShareLink(projectId) {
-  const data = await api.post(`/projects/${projectId}/share`)
-  const p = _state.projects.find(p => p.id === projectId)
-  if (p) p.shareId = data.shareId
-  return data.shareId
-}
-
-export async function revokeShareLink(projectId) {
-  await api.delete(`/projects/${projectId}/share`)
-  const p = _state.projects.find(p => p.id === projectId)
-  if (p) p.shareId = null
-}
-
-/* ─── Public project (for share links) ───── */
-
-export async function fetchPublicProject(shareToken) {
-  return await api.get(`/public/${shareToken}`)
-}
-
 /* ─── Calendar scheduling ─────────────────── */
 
 export async function scheduleTask(projectId, taskId, calendarStart, calendarDuration) {

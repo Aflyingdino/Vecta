@@ -152,29 +152,6 @@ Base path: `/api`
   - Also removes that user from task assignees, comments, and notes in that project.
 - Response: `200` with success message.
 
-## Sharing / Public Access
-
-### POST /projects/{id}/share
-- Purpose: Generates public share token for a project.
-- Auth: Project `admin` or `owner`.
-- Behavior: Writes random 64-char hex token to project.
-- Response: `200` with `{ shareId }`.
-
-### DELETE /projects/{id}/share
-- Purpose: Revokes public share token.
-- Auth: Project `admin` or `owner`.
-- Response: `200` with success message.
-
-### GET /public/{token}
-- Purpose: Returns read-only public project payload by share token.
-- Auth: No login required.
-- Behavior:
-  - Includes non-archived groups, backlog tasks, labels, metadata.
-  - Excludes private member details.
-  - Additional token-based rate limiting is applied.
-- Response: `200` with public project object.
-- Common errors: `404` invalid or expired token.
-
 ## Groups
 
 ### POST /projects/{id}/groups

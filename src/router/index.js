@@ -13,7 +13,6 @@ const DashboardPage  = () => import('@/pages/DashboardPage.vue')
 const ActivityPage   = () => import('@/pages/ActivityPage.vue')
 const CalendarPage   = () => import('@/pages/CalendarPage.vue')
 const AccountPage    = () => import('@/pages/AccountPage.vue')
-const PublicBoardPage = () => import('@/pages/PublicBoardPage.vue')
 const ProjectDashboardPage = () => import('@/pages/ProjectDashboardPage.vue')
 
 const routes = [
@@ -24,9 +23,6 @@ const routes = [
   { path: '/contact',  name: 'contact',  component: ContactPage },
   { path: '/login',    name: 'login',    component: LoginPage },
   { path: '/register', name: 'register', component: RegisterPage },
-  /* public read-only project share */
-  { path: '/p/:shareId', name: 'public-board', component: PublicBoardPage },
-
   /* ── Authenticated (wrapped in AppLayout) ── */
   {
     path: '/projects',
