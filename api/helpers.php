@@ -89,7 +89,16 @@ function securityLog(string $event, array $context = []): void
         'context' => $context,
     ];
 
-    error_log(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL, 3, SECURITY_LOG_FILE);
+    $line = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_string($line)) {
+        return;
+    }
+
+    try {
+        @error_log($line . PHP_EOL, 3, SECURITY_LOG_FILE);
+    } catch (Throwable) {
+        // Security logging must never block the request path.
+    }
 }
 
 function clientIp(): string
