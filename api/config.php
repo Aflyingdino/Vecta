@@ -3,6 +3,10 @@
  * Database configuration.
  */
 
+require_once __DIR__ . '/dotenv.php';
+loadEnvFile(__DIR__ . '/../.env');
+loadEnvFile(__DIR__ . '/.env');
+
 function envValue(string $key, ?string $default = null): ?string
 {
     $value = getenv($key);
@@ -53,9 +57,9 @@ define('ALLOWED_ORIGINS', envValue('ALLOWED_ORIGINS', APP_URL));
 
 define('DB_HOST', envValue('DB_HOST', '127.0.0.1'));
 define('DB_PORT', envValue('DB_PORT', '3306'));
-define('DB_NAME', envValue('DB_NAME', 'vecta'));
-define('DB_USER', envValue('DB_USER', 'vecta'));
-define('DB_PASS', envValue('DB_PASS', ''));
+define('DB_NAME', envValue('DB_NAME'));
+define('DB_USER', envValue('DB_USER'));
+define('DB_PASS', envValue('DB_PASS'));
 define('DB_CHARSET', 'utf8mb4');
 
 define('DEFAULT_SUBSCRIPTION_PLAN', 'free');
@@ -157,6 +161,10 @@ function db(): PDO
 {
     static $pdo = null;
     if ($pdo === null) {
+        if (!is_string(DB_NAME) || DB_NAME === '' || !is_string(DB_USER) || DB_USER === '' || !is_string(DB_PASS) || DB_PASS === '') {
+            throw new RuntimeException('Missing database credentials: DB_NAME, DB_USER, and DB_PASS are required');
+        }
+
         $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=%s',
             DB_HOST, DB_PORT, DB_NAME, DB_CHARSET
