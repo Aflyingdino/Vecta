@@ -20,6 +20,16 @@ function handleCreateGroup(int $projectId): never
     $uid = requireAuth();
     requireProjectAccess($projectId, $uid);
 
+    $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
+    $groupLimit = $plan['limits']['groups'] ?? null;
+    if ($groupLimit !== null) {
+        $stmt = db()->prepare('SELECT COUNT(*) AS cnt FROM board_groups WHERE project_id = ? AND archived_at IS NULL');
+        $stmt->execute([$projectId]);
+        if ((int) $stmt->fetch()['cnt'] >= $groupLimit) {
+            jsonError('Your plan does not allow more groups', 403);
+        }
+    }
+
     $data = jsonBody();
     requireFields($data, ['name']);
 
@@ -138,6 +148,16 @@ function handleArchiveGroup(int $groupId): never
 {
     $uid   = requireAuth();
     $group = resolveGroup($groupId, $uid);
+
+    $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
+    $archiveLimit = $plan['limits']['archivedGroups'] ?? null;
+    if ($archiveLimit !== null) {
+        $stmt = db()->prepare('SELECT COUNT(*) AS cnt FROM board_groups WHERE project_id = ? AND archived_at IS NOT NULL');
+        $stmt->execute([(int) $group['project_id']]);
+        if ((int) $stmt->fetch()['cnt'] >= $archiveLimit) {
+            jsonError('Your plan does not allow more archived groups', 403);
+        }
+    }
 
     db()->prepare('UPDATE board_groups SET archived_at = NOW() WHERE group_id = ?')
         ->execute([$groupId]);

@@ -29,7 +29,7 @@ require_once __DIR__ . '/routes/labels.php';
 require_once __DIR__ . '/routes/comments.php';
 require_once __DIR__ . '/routes/notes.php';
 require_once __DIR__ . '/routes/members.php';
-require_once __DIR__ . '/routes/share.php';
+require_once __DIR__ . '/routes/invitations.php';
 
 /**
  * @param array<string,string> $params
@@ -56,6 +56,7 @@ function defineRoutes(): array
         route('POST', '/auth/login', static fn() => handleLogin()),
         route('POST', '/auth/logout', static fn() => handleLogout()),
         route('GET', '/auth/me', static fn() => handleMe()),
+        route('PATCH', '/auth/subscription', static fn() => handleUpdateSubscription()),
 
         // Projects
         route('GET', '/projects', static fn() => handleListProjects()),
@@ -72,10 +73,11 @@ function defineRoutes(): array
         route('PATCH', '/projects/{pid}/members/{uid}', static fn(array $p) => handleUpdateMemberRole((int) $p['pid'], (int) $p['uid'])),
         route('DELETE', '/projects/{pid}/members/{uid}', static fn(array $p) => handleRemoveMember((int) $p['pid'], (int) $p['uid'])),
 
-        // Share
-        route('POST', '/projects/{id}/share', static fn(array $p) => handleGenerateShare((int) $p['id'])),
-        route('DELETE', '/projects/{id}/share', static fn(array $p) => handleRevokeShare((int) $p['id'])),
-        route('GET', '/public/{token}', static fn(array $p) => handleGetPublicProject($p['token'])),
+        // Invitations
+        route('GET', '/invitations', static fn() => handleListInvitations()),
+        route('POST', '/projects/{id}/invites', static fn(array $p) => handleCreateInvitation((int) $p['id'])),
+        route('POST', '/invitations/{id}/accept', static fn(array $p) => handleAcceptInvitation((int) $p['id'])),
+        route('POST', '/invitations/{id}/decline', static fn(array $p) => handleDeclineInvitation((int) $p['id'])),
 
         // Groups
         route('POST', '/projects/{id}/groups', static fn(array $p) => handleCreateGroup((int) $p['id'])),
@@ -93,6 +95,8 @@ function defineRoutes(): array
         route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/schedule', static fn(array $p) => handleScheduleTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}/schedule', static fn(array $p) => handleUnscheduleTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/archive', static fn(array $p) => handleArchiveTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
 
         // Labels
         route('POST', '/projects/{id}/labels', static fn(array $p) => handleCreateLabel((int) $p['id'])),

@@ -1,0 +1,15 @@
+Remaining tasks:
+
+1. Finish localization sweep: replace remaining hardcoded Dutch strings across `src/`.
+2. Add missing keys to src/locales/nl.json and src/locales/en.json.
+3. Run frontend build:
+   npm ci
+   npm run build
+4. Run PHP lint and tests:
+   find api -name "*.php" -print0 | xargs -0 -n1 php -l
+   php tests/php/helpers_test.php
+5. Run JS tests and lint (if configured).
+6. Commit & push incremental changes to branch `pr-01`.
+7. Open PR to `main` and verify CI passes.
+
+Notes: Work in small batches (edit → build → test → commit).

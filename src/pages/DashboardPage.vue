@@ -2,17 +2,19 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
+import { t } from '@/utils/i18n'
 import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds, toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
+import { pendingInvitations, acceptInvitation, declineInvitation, invitationLoading } from '@/stores/invitationStore'
 import { readJson, writeJson } from '@/utils/safeStorage'
 import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
 
 
 const router = useRouter()
 
-const activeTab = ref('overview') // 'overview' | 'projects' | 'activity'
+const activeTab = ref('overview') // 'overview' | 'projects' | 'invitations' | 'activity'
 
 // Gather all tasks across all projects
 const allTasks = computed(() => {
@@ -149,8 +151,33 @@ const statFilterLabel = computed(() => ({
   started: 'Bezig', overdue: 'Te laat', done: 'Klaar'
 })[statFilter.value])
 
+const invitationCount = computed(() => pendingInvitations.value.length)
+const invitationFeedback = ref('')
+
 function toggleStatFilter(key) {
   statFilter.value = statFilter.value === key ? null : key
+}
+
+async function acceptInvite(invitationId) {
+  invitationFeedback.value = ''
+  try {
+    const result = await acceptInvitation(invitationId)
+    if (result?.projectId) {
+      setActiveProject(result.projectId)
+      router.push({ name: 'board', params: { id: result.projectId } })
+    }
+  } catch (err) {
+    invitationFeedback.value = err.message
+  }
+}
+
+async function declineInvite(invitationId) {
+  invitationFeedback.value = ''
+  try {
+    await declineInvitation(invitationId)
+  } catch (err) {
+    invitationFeedback.value = err.message
+  }
 }
 
 // ── Activity: read state ──
@@ -226,7 +253,7 @@ function goToActivityTask(entry) {
     <div class="dashboard-page">
       <!-- Header -->
       <div class="page-header">
-        <h1 class="page-title">Overzicht</h1>
+        <h1 class="page-title">{{ t('overview') }}</h1>
         <p class="page-sub">Welkom terug, {{ user.name }}</p>
       </div>
 
@@ -234,15 +261,15 @@ function goToActivityTask(entry) {
       <div class="stats-grid">
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
           <div class="stat-value">{{ stats.started }}</div>
-          <div class="stat-label">Bezig</div>
+          <div class="stat-label">{{ t('inProgress') }}</div>
         </button>
         <button class="stat-card stat-card--warn" :class="{ 'stat-card--active': statFilter === 'overdue' }" @click="toggleStatFilter('overdue')">
           <div class="stat-value">{{ overdueTasks.length }}</div>
-          <div class="stat-label">Te laat</div>
+          <div class="stat-label">{{ t('overdue') }}</div>
         </button>
         <button class="stat-card stat-card--done" :class="{ 'stat-card--active': statFilter === 'done' }" @click="toggleStatFilter('done')">
           <div class="stat-value">{{ stats.done }}</div>
-          <div class="stat-label">Klaar</div>
+          <div class="stat-label">{{ t('done') }}</div>
         </button>
       </div>
 
@@ -255,7 +282,7 @@ function goToActivityTask(entry) {
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">Geen taken in deze categorie.</div>
+          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">{{ t('noTasksInCategory') }}</div>
           <div class="stat-panel-list" v-else>
             <div
               v-for="t in filteredStatTasks"
@@ -278,21 +305,29 @@ function goToActivityTask(entry) {
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'overview' }"
           @click="activeTab = 'overview'"
-        >Overzicht</button>
+        >{{ t('overview') }}</button>
         <button
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'projects' }"
           @click="activeTab = 'projects'"
         >
-          Projecten
+          {{ t('projects') }}
           <span class="tab-badge" v-if="projects.length">{{ projects.length }}</span>
+        </button>
+        <button
+          class="dash-tab"
+          :class="{ 'dash-tab--active': activeTab === 'invitations' }"
+          @click="activeTab = 'invitations'"
+        >
+          {{ t('invitations') }}
+          <span class="tab-badge tab-badge--warn" v-if="invitationCount">{{ invitationCount }}</span>
         </button>
         <button
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'activity' }"
           @click="activeTab = 'activity'"
         >
-          Activiteit
+          {{ t('activity') }}
           <span class="tab-badge tab-badge--warn" v-if="deadlineWarnings.length">{{ deadlineWarnings.length }}</span>
         </button>
       </div>
@@ -325,9 +360,9 @@ function goToActivityTask(entry) {
           <!-- Recent tasks -->
           <section class="dash-section">
             <div class="section-header">
-              <h2 class="section-title">
+                <h2 class="section-title">
                 <span class="dot dot--blue"></span>
-                Meest recente taken
+                {{ t('recentTasks') }}
               </h2>
             </div>
             <template v-if="recentTasks.length">
@@ -348,10 +383,10 @@ function goToActivityTask(entry) {
                   >{{ STATUS_META[t.status]?.label }}</span>
                 </div>
               </div>
-              <router-link to="/activity" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
+              <router-link to="/activity" class="recent-tasks-link">{{ t('viewAllTasks') }}</router-link>
             </template>
-            <div v-else class="empty-section">
-              <p>Nog geen taken. <router-link to="/projects">Maak een project</router-link> om te starten.</p>
+              <div v-else class="empty-section">
+              <p>{{ t('noTasks') }}. <router-link to="/projects">{{ t('createProject') }}</router-link> {{ t('toGetStarted') }}.</p>
             </div>
           </section>
         </div>
@@ -363,7 +398,7 @@ function goToActivityTask(entry) {
           <section class="dash-section">
             <h2 class="section-title">
               <span class="dot dot--green"></span>
-              Projecten ({{ projects.length }})
+              {{ t('projects') }} ({{ projects.length }})
             </h2>
             <div class="project-list" v-if="projects.length">
               <router-link
@@ -377,7 +412,7 @@ function goToActivityTask(entry) {
                 <div class="project-row__info">
                   <span class="project-row__name">{{ p.name }}</span>
                   <span class="project-row__count">
-                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} taken
+                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} {{ t('tasks') }}
                   </span>
                 </div>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="arrow">
@@ -386,7 +421,47 @@ function goToActivityTask(entry) {
               </router-link>
             </div>
             <div v-else class="empty-section">
-              <p><router-link to="/projects">Maak je eerste project</router-link></p>
+              <p><router-link to="/projects">{{ t('createFirstProject') }}</router-link></p>
+            </div>
+          </section>
+        </div>
+      </template>
+
+      <!-- ── Invitations tab ───────────────────────── -->
+      <template v-if="activeTab === 'invitations'">
+        <div class="tab-panel">
+          <section class="dash-section">
+            <h2 class="section-title">
+              <span class="dot dot--purple"></span>
+              {{ t('invitations') }} ({{ invitationCount }})
+            </h2>
+
+            <template v-if="pendingInvitations.length">
+              <div class="project-list">
+                <div
+                  v-for="invite in pendingInvitations"
+                  :key="invite.id"
+                  class="project-row project-row--invite"
+                >
+                  <div class="project-row__icon" :style="{ background: invite.projectColor }">{{ invite.projectName[0] }}</div>
+                  <div class="project-row__info">
+                    <span class="project-row__name">{{ invite.projectName }}</span>
+                    <span class="project-row__count">
+                      {{ t('invitedBy') }} {{ invite.invitedBy }} · {{ invite.role }}
+                    </span>
+                  </div>
+                  <div class="invite-actions">
+                    <button class="invite-action-btn invite-action-btn--accept" :disabled="invitationLoading" @click="acceptInvite(invite.id)">{{ t('accept') }}</button>
+                    <button class="invite-action-btn invite-action-btn--decline" :disabled="invitationLoading" @click="declineInvite(invite.id)">{{ t('decline') }}</button>
+                  </div>
+                </div>
+              </div>
+
+              <p v-if="invitationFeedback" class="invitation-feedback">{{ invitationFeedback }}</p>
+            </template>
+
+            <div v-else class="empty-section">
+              <p>{{ t('noInvitations') }}</p>
             </div>
           </section>
         </div>
@@ -477,7 +552,7 @@ function goToActivityTask(entry) {
                   v-if="entry.taskId || entry.projectId"
                   class="activity-mute-btn"
                   :class="{ 'activity-mute-btn--active': entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId) }"
-                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Meldingen inschakelen' : 'Meldingen dempen'"
+                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? t('enableNotifications') : t('muteNotifications')"
                   @click.stop="entry.taskId ? toggleMuteTask(entry.taskId) : toggleMuteProject(entry.projectId)"
                 >
                   <svg v-if="!(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId))" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -744,6 +819,7 @@ function goToActivityTask(entry) {
 .dot--blue   { background: #5b5bd6; }
 .dot--green  { background: #46a758; }
 .dot--orange { background: #f76b15; }
+.dot--purple { background: #8e4ec6; }
 
 /* Task rows */
 .task-list { display: flex; flex-direction: column; }
@@ -812,6 +888,53 @@ function goToActivityTask(entry) {
 .project-row__name { font-size: 13px; font-weight: 600; color: var(--color-text-1); display: block; }
 .project-row__count { font-size: 11px; color: var(--color-text-3); }
 .arrow { color: var(--color-text-3); }
+.project-row--invite {
+  align-items: center;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.invite-action-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.invite-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.invite-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.invite-action-btn--accept {
+  background: color-mix(in srgb, #46a758 18%, transparent);
+  border-color: color-mix(in srgb, #46a758 35%, transparent);
+  color: #46a758;
+}
+
+.invite-action-btn--decline {
+  background: color-mix(in srgb, #e5484d 18%, transparent);
+  border-color: color-mix(in srgb, #e5484d 35%, transparent);
+  color: #e5484d;
+}
+
+.invitation-feedback {
+  margin: 12px 18px 0;
+  font-size: 12px;
+  color: var(--color-danger);
+}
 
 /* Activity feed — base shared styles */
 .activity-list { display: flex; flex-direction: column; }

@@ -20,11 +20,6 @@ function applyRequestGuards(string $method, string $path): void
 
     $ip = clientIp();
 
-    if (str_starts_with($path, '/public/')) {
-        enforceRateLimit('public:' . $ip, RATE_LIMIT_PUBLIC, RATE_LIMIT_PUBLIC_WINDOW);
-        return;
-    }
-
     if ($path === '/auth/me') {
         enforceRateLimit('auth-me:' . $ip, RATE_LIMIT_READ, RATE_LIMIT_READ_WINDOW);
         return;

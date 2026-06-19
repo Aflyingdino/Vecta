@@ -41,10 +41,20 @@ export async function fetchProjects() {
   try {
     const data = await api.get('/projects')
     _state.projects = data
+    _state.error = null
   } catch (err) {
     _state.error = err.message
   } finally {
     _state.loading = false
+  }
+}
+
+export async function refreshProjects() {
+  try {
+    const data = await api.get('/projects')
+    _state.projects = data
+  } catch (err) {
+    console.warn('Project sync failed:', err)
   }
 }
 
@@ -110,6 +120,11 @@ export async function addMember(projectId, email, role = 'collaborator') {
   if (p) p.members.push(member)
 }
 
+export async function inviteMember(projectId, email, role = 'collaborator') {
+  const invitation = await api.post(`/projects/${projectId}/invites`, { email, role })
+  return invitation
+}
+
 export async function removeMember(projectId, memberId) {
   await api.delete(`/projects/${projectId}/members/${memberId}`)
   const p = _state.projects.find(p => p.id === projectId)
@@ -124,27 +139,6 @@ export async function updateMemberRole(projectId, memberId, role) {
   const p = _state.projects.find(p => p.id === projectId)
   const m = p?.members.find(m => m.id === memberId)
   if (m) m.role = role
-}
-
-/* ─── Share link ─────────────────────────── */
-
-export async function generateShareLink(projectId) {
-  const data = await api.post(`/projects/${projectId}/share`)
-  const p = _state.projects.find(p => p.id === projectId)
-  if (p) p.shareId = data.shareId
-  return data.shareId
-}
-
-export async function revokeShareLink(projectId) {
-  await api.delete(`/projects/${projectId}/share`)
-  const p = _state.projects.find(p => p.id === projectId)
-  if (p) p.shareId = null
-}
-
-/* ─── Public project (for share links) ───── */
-
-export async function fetchPublicProject(shareToken) {
-  return await api.get(`/public/${shareToken}`)
 }
 
 /* ─── Calendar scheduling ─────────────────── */

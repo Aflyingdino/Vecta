@@ -3,13 +3,18 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
+import { getPlanList, getPlanLabel, formatLimit } from '@/utils/subscriptionPlans'
+import { t } from '@/utils/i18n'
 
 const router = useRouter()
+const plans = getPlanList()
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirm = ref('')
+const selectedPlan = ref('free')
+const planPickerOpen = ref(false)
 const localError = ref('')
 
 const passwordChecks = computed(() => ({
@@ -25,11 +30,24 @@ function validateRegisterForm() {
   const trimmedName = name.value.trim()
   const trimmedEmail = email.value.trim().toLowerCase()
 
-  if (!trimmedName) return 'Naam is verplicht'
-  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
-  if (!passwordValid.value) return 'Wachtwoord voldoet niet aan de eisen'
-  if (password.value !== confirm.value) return 'Wachtwoorden komen niet overeen'
+  if (!trimmedName) return t('nameRequired')
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return t('invalidEmail')
+  if (!passwordValid.value) return t('passwordInvalid')
+  if (password.value !== confirm.value) return t('passwordsNoMatch')
   return null
+}
+
+function openPlanPicker() {
+  planPickerOpen.value = true
+}
+
+function closePlanPicker() {
+  planPickerOpen.value = false
+}
+
+function choosePlan(planKey) {
+  selectedPlan.value = planKey
+  closePlanPicker()
 }
 
 async function handleRegister() {
@@ -43,7 +61,12 @@ async function handleRegister() {
   }
 
   try {
-    await register({ name: name.value.trim(), email: email.value.trim().toLowerCase(), password: password.value })
+    await register({
+      name: name.value.trim(),
+      email: email.value.trim().toLowerCase(),
+      password: password.value,
+      subscriptionPlan: selectedPlan.value,
+    })
     try {
       await fetchProjects()
     } catch (err) {
@@ -63,46 +86,86 @@ const displayError = () => localError.value || authError.value
   <div class="auth-page">
     <div class="auth-card">
       <router-link to="/" class="auth-logo">
-        <img src="/logo.png" alt="Vecta logo" width="28" height="28" />
-        <span>Vecta</span>
+        <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
+        <span>TaskPilot</span>
       </router-link>
-      <h1 class="auth-title">Account aanmaken</h1>
-      <p class="auth-sub">Gratis te gebruiken, zonder creditcard</p>
+      <h1 class="auth-title">{{ t('createAccount') }}</h1>
+      <p class="auth-sub">{{ t('createAccountSubtitle') }}</p>
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleRegister">
         <label class="form-label">
-          Volledige naam
-          <input v-model="name" type="text" class="form-input" placeholder="Jan Jansen" required autocomplete="name" />
+          {{ t('fullName') }}
+          <input v-model="name" type="text" class="form-input" :placeholder="t('fullNamePlaceholder')" required autocomplete="name" />
         </label>
         <label class="form-label">
-          E-mail
-          <input v-model="email" type="email" class="form-input" placeholder="jij@voorbeeld.nl" required autocomplete="email" />
+          {{ t('email') }}
+          <input v-model="email" type="email" class="form-input" :placeholder="t('emailPlaceholder')" required autocomplete="email" />
+        </label>
+
+        <div class="plan-section">
+          <div class="form-label plan-label">{{ t('subscription') }}</div>
+          <button type="button" class="plan-picker-btn" @click="openPlanPicker">
+            <div>
+              <span class="plan-picker-btn__title">{{ t('choosePlan') }}</span>
+              <span class="plan-picker-btn__subtitle">{{ t('current') }}: {{ getPlanLabel(selectedPlan) }}</span>
+            </div>
+            <span class="plan-picker-btn__chev">›</span>
+          </button>
+        </div>
+
+        <label class="form-label">
+          Password
+          <input v-model="password" type="password" class="form-input" placeholder="Enter password" required autocomplete="new-password" />
         </label>
         <label class="form-label">
-          Wachtwoord
-          <input v-model="password" type="password" class="form-input" placeholder="Vul een wachtwoord in" required autocomplete="new-password" minlength="10" />
+          Confirm password
+          <input v-model="confirm" type="password" class="form-input" placeholder="Repeat password" required autocomplete="new-password" />
         </label>
-        <ul class="password-rules">
-          <li :class="{ 'rule-ok': passwordChecks.minLength }">Minimaal 10 tekens</li>
-          <li :class="{ 'rule-ok': passwordChecks.hasLower }">Minimaal 1 kleine letter</li>
-          <li :class="{ 'rule-ok': passwordChecks.hasUpper }">Minimaal 1 hoofdletter</li>
-          <li :class="{ 'rule-ok': passwordChecks.hasNumber }">Minimaal 1 cijfer</li>
-        </ul>
-        <label class="form-label">
-          Herhaal wachtwoord
-          <input v-model="confirm" type="password" class="form-input" placeholder="Herhaal wachtwoord" required autocomplete="new-password" />
-        </label>
-        <button type="submit" class="btn-submit" :disabled="authLoading || !passwordValid">
+        <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Account wordt aangemaakt…' : 'Account aanmaken' }}
+          {{ authLoading ? t('creatingAccount') : t('createAccount') }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Heb je al een account? <router-link to="/login">Inloggen</router-link>
+        {{ t('alreadyAccount') }} <router-link to="/login">{{ t('logIn') }}</router-link>
       </p>
+
+      <Teleport to="body">
+        <div v-if="planPickerOpen" class="plan-modal-backdrop" @click.self="closePlanPicker">
+          <div class="plan-modal" role="dialog" aria-modal="true" aria-labelledby="plan-picker-title">
+            <div class="plan-modal__header">
+              <div>
+                <h2 id="plan-picker-title">Kies een plan</h2>
+                <p>Kies nu een abonnement of laat het op Free staan.</p>
+              </div>
+              <button type="button" class="plan-modal__close" @click="closePlanPicker" aria-label="Sluiten">×</button>
+            </div>
+
+            <div class="plan-modal__grid">
+              <button
+                v-for="plan in plans"
+                :key="plan.key"
+                type="button"
+                class="plan-choice"
+                :class="{ 'plan-choice--active': selectedPlan === plan.key }"
+                @click="choosePlan(plan.key)"
+              >
+                <span class="plan-choice__name">{{ getPlanLabel(plan.key) }}</span>
+                <span class="plan-choice__price">{{ plan.priceShort }}</span>
+                <span class="plan-choice__limit">{{ formatLimit(plan.limits.projects) }} {{ t('projects') }}</span>
+              </button>
+            </div>
+
+            <div class="plan-modal__actions">
+              <button type="button" class="btn-secondary" @click="choosePlan('free')">{{ t('continueWithFree') }}</button>
+              <button type="button" class="btn-secondary btn-secondary--ghost" @click="closePlanPicker">{{ t('close') }}</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </div>
 </template>
@@ -148,6 +211,26 @@ const displayError = () => localError.value || authError.value
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
+.plan-section { display: flex; flex-direction: column; gap: 8px; }
+.plan-label { margin-bottom: 2px; }
+.plan-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.plan-picker-btn:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border)); }
+.plan-picker-btn__title { display: block; font-size: 14px; font-weight: 700; }
+.plan-picker-btn__subtitle { display: block; font-size: 12px; color: var(--color-text-3); margin-top: 2px; }
+.plan-picker-btn__chev { font-size: 22px; line-height: 1; color: var(--color-text-3); }
 .password-rules {
   margin: -6px 0 2px;
   padding-left: 18px;
@@ -212,4 +295,87 @@ const displayError = () => localError.value || authError.value
 .auth-switch { font-size: 13px; color: var(--color-text-2); text-align: center; }
 .auth-switch a { color: var(--color-accent); text-decoration: none; font-weight: 600; }
 .auth-switch a:hover { text-decoration: underline; }
+
+.plan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 18, 28, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+.plan-modal {
+  width: min(760px, 100%);
+  max-height: min(84vh, 760px);
+  overflow: auto;
+  border-radius: 18px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.26);
+}
+.plan-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.plan-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 20px;
+}
+.plan-choice {
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.plan-choice:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border)); }
+.plan-choice--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-2));
+}
+.plan-choice__name { font-size: 14px; font-weight: 700; }
+.plan-choice__price { font-size: 12px; color: var(--color-text-2); }
+.plan-choice__limit { font-size: 11px; color: var(--color-text-3); }
+.plan-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px;
+}
+.btn-secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-accent);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.btn-secondary:hover { background: var(--color-accent-hover); }
+.btn-secondary--ghost {
+  background: var(--color-surface-2);
+  color: var(--color-text-1);
+}
+.btn-secondary--ghost:hover { background: var(--color-surface-3); }
+
+@media (max-width: 640px) {
+  .plan-modal__grid { grid-template-columns: 1fr; }
+  .plan-modal__actions { flex-direction: column; }
+  .btn-secondary { width: 100%; }
+}
 </style>

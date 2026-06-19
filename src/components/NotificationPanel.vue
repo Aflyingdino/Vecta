@@ -9,6 +9,7 @@ import {
 } from '@/stores/notificationStore'
 import { openTaskDetail } from '@/stores/uiStore'
 import { setActiveProject } from '@/stores/projectStore'
+import { t } from '@/utils/i18n'
 
 const emit = defineEmits(['close'])
 
@@ -98,23 +99,23 @@ function archiveSelected() {
       <!-- Header -->
       <div class="notif-header">
         <div class="notif-header-left">
-          <span class="notif-title">Meldingen</span>
+          <span class="notif-title">{{ t('notifications') }}</span>
           <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount }}</span>
         </div>
         <div class="notif-header-right">
-          <button v-if="selected.size > 0" class="notif-action-btn notif-action-btn--danger" @click="deleteSelected" title="Selectie verwijderen">
+          <button v-if="selected.size > 0" class="notif-action-btn notif-action-btn--danger" @click="deleteSelected" :title="t('deleteSelection')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21l-1.022.165M4.772 5.79l1.022.165m0 0l1.08 14.023A2.25 2.25 0 009.118 22h5.764a2.25 2.25 0 002.244-2.077l1.08-14.023"/></svg>
-            Verwijderen ({{ selected.size }})
+            {{ t('delete') }} ({{ selected.size }})
           </button>
-          <button v-if="selected.size > 0" class="notif-action-btn" @click="archiveSelected" title="Selectie archiveren">
+          <button v-if="selected.size > 0" class="notif-action-btn" @click="archiveSelected" :title="t('archiveSelection')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75"/></svg>
-            Archiveren ({{ selected.size }})
+            {{ t('archive') }} ({{ selected.size }})
           </button>
-          <button v-if="unreadCount > 0" class="notif-action-btn" @click="markAllRead" title="Alles als gelezen markeren">
+          <button v-if="unreadCount > 0" class="notif-action-btn" @click="markAllRead" :title="t('markAllRead')">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-            Alles gelezen
+            {{ t('markAllRead') }}
           </button>
-          <button class="notif-close" @click="emit('close')" aria-label="Meldingen sluiten">
+          <button class="notif-close" @click="emit('close')" :aria-label="t('closeNotifications')">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -123,7 +124,7 @@ function archiveSelected() {
       <!-- Multi-select hint -->
       <div v-if="notifications.length" class="notif-hint">
         <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M13 16h-1v-4h-1m1-4h.01"/><circle cx="12" cy="12" r="10"/></svg>
-        Shift+klik voor bereikselectie · Ctrl+klik voor meerselectie
+        {{ t('multiSelectHint') }}
       </div>
 
       <!-- List -->
@@ -151,10 +152,10 @@ function archiveSelected() {
               <div class="notif-item-time">{{ formatRelative(n.createdAt) }}</div>
             </div>
             <div class="notif-item-actions" @click.stop>
-              <button class="notif-item-btn" @click="markRead(n.id); archiveNotification(n.id)" title="Archiveren">
+              <button class="notif-item-btn" @click="markRead(n.id); archiveNotification(n.id)" :title="t('archive')">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5"/></svg>
               </button>
-              <button class="notif-item-btn notif-item-btn--danger" @click="deleteNotification(n.id)" title="Verwijderen">
+              <button class="notif-item-btn notif-item-btn--danger" @click="deleteNotification(n.id)" :title="t('delete')">
                 <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
@@ -200,14 +201,14 @@ function archiveSelected() {
             </div>
           </div>
           <div class="notif-detail-footer">
-            <button class="notif-detail-dismiss" @click="notifDetail = null">Sluiten</button>
+            <button class="notif-detail-dismiss" @click="notifDetail = null">{{ t('close') }}</button>
             <button
               v-if="notifDetail.taskId"
               class="notif-detail-goto"
               @click="goToTask(notifDetail)"
             >
               <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-              Ga naar taak
+              {{ t('goToTask') }}
             </button>
           </div>
         </div>

@@ -191,6 +191,7 @@ paths:
       operationId: updateProject
       summary: Update project
       security:
+
         - cookieAuth: []
           csrfToken: []
       parameters:
@@ -236,26 +237,112 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /public/{token}:
-    get:
-      operationId: getPublicProject
-      summary: Public read-only project
-      security: []
+  /projects/{id}/invites:
+    post:
+      operationId: inviteProjectMember
+      summary: Create project invitation
+      security:
+        - cookieAuth: []
+          csrfToken: []
       parameters:
-        - name: token
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
       responses:
-        '200':
-          description: Public project payload
+        '201':
+          description: Created invitation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicProject'
-        '404':
-          description: Not found
+                $ref: '#/components/schemas/Invitation'
+        '200':
+          description: Updated pending invitation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /invitations:
+    get:
+      operationId: listInvitations
+      summary: List pending invitations for current user
+      responses:
+        '200':
+          description: Pending invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invitation'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /invitations/{id}/accept:
+    post:
+      operationId: acceptInvitation
+      summary: Accept invitation
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Accepted invitation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationActionResponse'
+        '403':
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /invitations/{id}/decline:
+    post:
+      operationId: declineInvitation
+      summary: Decline invitation
+      security:
+        - cookieAuth: []
+          csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Declined invitation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationActionResponse'
+        '403':
+          description: Not allowed
           content:
             application/json:
               schema:
@@ -413,6 +500,63 @@ components:
         color:
           type: string
           pattern: '^#[0-9a-fA-F]{6}$'
+
+    InvitationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, collaborator]
+
+    Invitation:
+      type: object
+      required: [id, projectId, projectName, email, role, invitedBy, status, invitedAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: string
+        projectDescription:
+          type: string
+          nullable: true
+        projectColor:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, collaborator]
+        invitedBy:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, declined, cancelled]
+        invitedAt:
+          type: string
+        respondedAt:
+          type: string
+          nullable: true
+        projectArchived:
+          type: boolean
+
+    InvitationActionResponse:
+      type: object
+      required: [invitationId, projectId, status]
+      properties:
+        invitationId:
+          type: integer
+        projectId:
+          type: integer
+        status:
+          type: string
 
     CreateTaskRequest:
       type: object

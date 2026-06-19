@@ -6,7 +6,7 @@ export const ui = reactive({
   detailTaskId: null,  // open task detail panel for this id
   settingsOpen: false,
   lightMode: localStorage.getItem('theme') !== 'dark',
-  locale: localStorage.getItem('locale') || 'nl-NL',
+  language: localStorage.getItem('language') || 'nl',
 })
 
 export function openCreateTask() {
@@ -46,6 +46,18 @@ export function toggleTheme() {
   applyTheme()
 }
 
+export function setThemeMode(mode) {
+  ui.lightMode = mode === 'light'
+  localStorage.setItem('theme', ui.lightMode ? 'light' : 'dark')
+  applyTheme()
+}
+
+export function setLanguage(language) {
+  ui.language = language === 'en' ? 'en' : 'nl'
+  localStorage.setItem('language', ui.language)
+  applyTheme()
+}
+
 export function applyTheme() {
   if (ui.lightMode) {
     document.documentElement.classList.add('light-mode')
@@ -53,5 +65,5 @@ export function applyTheme() {
     document.documentElement.classList.remove('light-mode')
   }
 
-  document.documentElement.lang = ui.locale.startsWith('nl') ? 'nl' : 'en'
+  document.documentElement.lang = ui.language === 'en' ? 'en' : 'nl'
 }

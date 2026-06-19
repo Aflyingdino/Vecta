@@ -3,32 +3,10 @@
  * Database configuration.
  */
 
-require_once __DIR__ . '/dotenv.php';
-loadEnvFile(__DIR__ . '/../.env');
-loadEnvFile(__DIR__ . '/.env');
-
 function envValue(string $key, ?string $default = null): ?string
 {
     $value = getenv($key);
-    if ($value === false) {
-        static $fileSecrets = null;
-
-        if ($fileSecrets === null) {
-            $fileSecrets = [];
-            $secretsFile = __DIR__ . '/.secrets.php';
-            if (is_file($secretsFile)) {
-                $loaded = require $secretsFile;
-                if (is_array($loaded)) {
-                    $fileSecrets = $loaded;
-                }
-            }
-        }
-
-        $fileValue = $fileSecrets[$key] ?? null;
-        if (is_string($fileValue)) {
-            return $fileValue;
-        }
-
+    if ($value === false || $value === '') {
         return $default;
     }
     return $value;
@@ -75,10 +53,74 @@ define('ALLOWED_ORIGINS', envValue('ALLOWED_ORIGINS', APP_URL));
 
 define('DB_HOST', envValue('DB_HOST', '127.0.0.1'));
 define('DB_PORT', envValue('DB_PORT', '3306'));
-define('DB_NAME', envValue('DB_NAME'));
-define('DB_USER', envValue('DB_USER'));
-define('DB_PASS', envValue('DB_PASS'));
+define('DB_NAME', envValue('DB_NAME', 'vecta'));
+define('DB_USER', envValue('DB_USER', 'vecta'));
+define('DB_PASS', envValue('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
+
+define('DEFAULT_SUBSCRIPTION_PLAN', 'free');
+define('SUBSCRIPTION_PLANS', [
+    'free' => [
+        'name' => 'Free',
+        'rolesEnabled' => false,
+        'durationDays' => null,
+        'limits' => [
+            'projects' => 1,
+            'groups' => 5,
+            'archivedGroups' => 10,
+            'collaborators' => 2,
+            'planningWindowDays' => 7,
+        ],
+    ],
+    'standard' => [
+        'name' => 'Standard',
+        'rolesEnabled' => false,
+        'durationDays' => 30,
+        'limits' => [
+            'projects' => 2,
+            'groups' => 10,
+            'archivedGroups' => 25,
+            'collaborators' => 5,
+            'planningWindowDays' => 14,
+        ],
+    ],
+    'premium' => [
+        'name' => 'Premium',
+        'rolesEnabled' => false,
+        'durationDays' => 30,
+        'limits' => [
+            'projects' => 5,
+            'groups' => 15,
+            'archivedGroups' => 50,
+            'collaborators' => 10,
+            'planningWindowDays' => 31,
+        ],
+    ],
+    'premium_plus' => [
+        'name' => 'Premium+',
+        'rolesEnabled' => true,
+        'durationDays' => 30,
+        'limits' => [
+            'projects' => 10,
+            'groups' => 20,
+            'archivedGroups' => 100,
+            'collaborators' => 20,
+            'planningWindowDays' => 92,
+        ],
+    ],
+    'enterprise' => [
+        'name' => 'Enterprise',
+        'rolesEnabled' => true,
+        'durationDays' => 30,
+        'limits' => [
+            'projects' => null,
+            'groups' => null,
+            'archivedGroups' => null,
+            'collaborators' => null,
+            'planningWindowDays' => null,
+        ],
+    ],
+]);
 
 if (APP_ENV === 'production') {
     requireEnv('APP_URL');
@@ -115,10 +157,6 @@ function db(): PDO
 {
     static $pdo = null;
     if ($pdo === null) {
-        if (DB_NAME === null || DB_USER === null || DB_PASS === null) {
-            throw new RuntimeException('Missing database credentials: DB_NAME, DB_USER, and DB_PASS are required');
-        }
-
         $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=%s',
             DB_HOST, DB_PORT, DB_NAME, DB_CHARSET

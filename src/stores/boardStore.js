@@ -542,13 +542,13 @@ export async function deleteLabel(labelId) {
   const board = b(); if (!board) return
   const idx = board.labels.findIndex((l) => l.id === labelId)
   if (idx === -1) return
-  
+
   const removedLabel = board.labels[idx]
   const taskLabelUpdates = []
-  
+
   try {
     board.labels.splice(idx, 1)
-    
+
     const all = [...board.backlog, ...board.groups.flatMap((g) => g.tasks)]
     for (const task of all) {
       if (task.labelIds && Array.isArray(task.labelIds)) {
@@ -559,7 +559,7 @@ export async function deleteLabel(labelId) {
         }
       }
     }
-    
+
     await api.delete(`/labels/${labelId}`)
   } catch (err) {
     console.error('Failed to delete label:', err)
@@ -606,3 +606,5 @@ export async function moveTaskToBacklog(taskId) {
     }
   }
 }
+
+export const archivedTasks  = computed(() => b()?.archivedTasks ?? [])
