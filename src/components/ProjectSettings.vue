@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { ui, closeSettings, toggleTheme } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
-import { activeProject, addMember, removeMember, updateMemberRole } from '@/stores/projectStore'
+import { activeProject, inviteMember, removeMember, updateMemberRole } from '@/stores/projectStore'
 import ColorPicker from './ColorPicker.vue'
 import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
 import { user } from '@/stores/authStore'
@@ -44,15 +44,14 @@ const memberRole  = ref('collaborator')
 const memberError = ref('')
 const rolesEnabled = computed(() => canUseRoles(user.subscriptionPlan))
 
-async function inviteMember() {
+async function sendInvitation() {
   memberError.value = ''
   const email = memberEmail.value.trim().toLowerCase()
   if (!email || !email.includes('@')) { memberError.value = 'Voer een geldig e-mailadres in.'; return }
   const p = activeProject.value
   if (!p) return
-  if (p.members.find(m => m.email === email)) { memberError.value = 'Deze gebruiker is al lid.'; return }
   try {
-    await addMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
+    await inviteMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
     memberEmail.value = ''
     memberRole.value  = 'collaborator'
   } catch (err) {
@@ -214,15 +213,16 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                     type="email"
                     class="label-name-input"
                     :placeholder="t('invitePlaceholder')"
-                    @keydown.enter="inviteMember"
+                    @keydown.enter="sendInvitation"
                   />
                   <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
                     <option value="admin">Admin</option>
                     <option value="collaborator">Lid</option>
                   </select>
-                  <button class="btn-add" @click="inviteMember">{{ t('invite') }}</button>
+                  <button class="btn-add" @click="sendInvitation">{{ t('invite') }}</button>
                 </div>
                 <p v-if="!rolesEnabled" class="member-note">{{ t('rolesAvailablePremium') }}</p>
+                <p class="member-note">{{ t('invitationInboxHint') }}</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>
               </div>
 
