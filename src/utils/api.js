@@ -1,5 +1,7 @@
-const DEFAULT_API_BASE = '/api/index.php'
+const DEFAULT_API_BASE = '/api'
+const DEFAULT_FALLBACK_API_BASE = '/api/index.php'
 const envApiBase = (import.meta.env.VITE_API_BASE || '').trim()
+const envFallbackApiBase = (import.meta.env.VITE_API_FALLBACK_BASE || '').trim()
 
 function withLeadingSlash(value) {
   if (!value) return ''
@@ -11,7 +13,7 @@ function withoutTrailingSlash(value) {
 }
 
 const BASE = withoutTrailingSlash(withLeadingSlash(envApiBase || DEFAULT_API_BASE))
-const FALLBACK_BASE = BASE
+const FALLBACK_BASE = withoutTrailingSlash(withLeadingSlash(envFallbackApiBase || DEFAULT_FALLBACK_API_BASE))
 const CSRF_HEADER = 'X-CSRF-Token'
 
 let csrfToken = null
