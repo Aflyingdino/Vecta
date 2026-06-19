@@ -88,7 +88,17 @@ jobs:
       - name: Prepare for SPA hosting
         run: |
           cp dist/index.html dist/404.html
-          echo "ErrorDocument 404 /index.html" > dist/.htaccess
+          cat > dist/.htaccess <<'EOF'
+          RewriteEngine On
+          Options -Indexes
+
+          RewriteRule ^api(/|$) - [L]
+          RewriteCond %{REQUEST_FILENAME} !-f
+          RewriteCond %{REQUEST_FILENAME} !-d
+          RewriteRule ^ index.html [L]
+
+          ErrorDocument 404 /index.html
+          EOF
 
       - name: Configure git identity
         run: |
