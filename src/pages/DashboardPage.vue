@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '@/components/AppLayout.vue'
+import { t } from '@/utils/i18n'
 import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
@@ -226,7 +227,7 @@ function goToActivityTask(entry) {
     <div class="dashboard-page">
       <!-- Header -->
       <div class="page-header">
-        <h1 class="page-title">Overzicht</h1>
+        <h1 class="page-title">{{ t('overview') }}</h1>
         <p class="page-sub">Welkom terug, {{ user.name }}</p>
       </div>
 
@@ -234,15 +235,15 @@ function goToActivityTask(entry) {
       <div class="stats-grid">
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
           <div class="stat-value">{{ stats.started }}</div>
-          <div class="stat-label">Bezig</div>
+          <div class="stat-label">{{ t('inProgress') }}</div>
         </button>
         <button class="stat-card stat-card--warn" :class="{ 'stat-card--active': statFilter === 'overdue' }" @click="toggleStatFilter('overdue')">
           <div class="stat-value">{{ overdueTasks.length }}</div>
-          <div class="stat-label">Te laat</div>
+          <div class="stat-label">{{ t('overdue') }}</div>
         </button>
         <button class="stat-card stat-card--done" :class="{ 'stat-card--active': statFilter === 'done' }" @click="toggleStatFilter('done')">
           <div class="stat-value">{{ stats.done }}</div>
-          <div class="stat-label">Klaar</div>
+          <div class="stat-label">{{ t('done') }}</div>
         </button>
       </div>
 
@@ -255,7 +256,7 @@ function goToActivityTask(entry) {
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">Geen taken in deze categorie.</div>
+          <div v-if="filteredStatTasks.length === 0" class="stat-panel-empty">{{ t('noTasksInCategory') }}</div>
           <div class="stat-panel-list" v-else>
             <div
               v-for="t in filteredStatTasks"
@@ -278,13 +279,13 @@ function goToActivityTask(entry) {
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'overview' }"
           @click="activeTab = 'overview'"
-        >Overzicht</button>
+        >{{ t('overview') }}</button>
         <button
           class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'projects' }"
           @click="activeTab = 'projects'"
         >
-          Projecten
+          {{ t('projects') }}
           <span class="tab-badge" v-if="projects.length">{{ projects.length }}</span>
         </button>
         <button
@@ -292,7 +293,7 @@ function goToActivityTask(entry) {
           :class="{ 'dash-tab--active': activeTab === 'activity' }"
           @click="activeTab = 'activity'"
         >
-          Activiteit
+          {{ t('activity') }}
           <span class="tab-badge tab-badge--warn" v-if="deadlineWarnings.length">{{ deadlineWarnings.length }}</span>
         </button>
       </div>
@@ -325,9 +326,9 @@ function goToActivityTask(entry) {
           <!-- Recent tasks -->
           <section class="dash-section">
             <div class="section-header">
-              <h2 class="section-title">
+                <h2 class="section-title">
                 <span class="dot dot--blue"></span>
-                Meest recente taken
+                {{ t('recentTasks') }}
               </h2>
             </div>
             <template v-if="recentTasks.length">
@@ -348,10 +349,10 @@ function goToActivityTask(entry) {
                   >{{ STATUS_META[t.status]?.label }}</span>
                 </div>
               </div>
-              <router-link to="/activity" class="recent-tasks-link">Groot overzicht van alle taken</router-link>
+              <router-link to="/activity" class="recent-tasks-link">{{ t('viewAllTasks') }}</router-link>
             </template>
-            <div v-else class="empty-section">
-              <p>Nog geen taken. <router-link to="/projects">Maak een project</router-link> om te starten.</p>
+              <div v-else class="empty-section">
+              <p>{{ t('noTasks') }}. <router-link to="/projects">{{ t('createProject') }}</router-link> {{ t('toGetStarted') }}.</p>
             </div>
           </section>
         </div>
@@ -363,7 +364,7 @@ function goToActivityTask(entry) {
           <section class="dash-section">
             <h2 class="section-title">
               <span class="dot dot--green"></span>
-              Projecten ({{ projects.length }})
+              {{ t('projects') }} ({{ projects.length }})
             </h2>
             <div class="project-list" v-if="projects.length">
               <router-link
@@ -377,7 +378,7 @@ function goToActivityTask(entry) {
                 <div class="project-row__info">
                   <span class="project-row__name">{{ p.name }}</span>
                   <span class="project-row__count">
-                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} taken
+                    {{ p.backlog.length + p.groups.reduce((s, g) => s + g.tasks.length, 0) }} {{ t('tasks') }}
                   </span>
                 </div>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="arrow">
@@ -386,7 +387,7 @@ function goToActivityTask(entry) {
               </router-link>
             </div>
             <div v-else class="empty-section">
-              <p><router-link to="/projects">Maak je eerste project</router-link></p>
+              <p><router-link to="/projects">{{ t('createFirstProject') }}</router-link></p>
             </div>
           </section>
         </div>
@@ -477,7 +478,7 @@ function goToActivityTask(entry) {
                   v-if="entry.taskId || entry.projectId"
                   class="activity-mute-btn"
                   :class="{ 'activity-mute-btn--active': entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId) }"
-                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? 'Meldingen inschakelen' : 'Meldingen dempen'"
+                  :title="(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId)) ? t('enableNotifications') : t('muteNotifications')"
                   @click.stop="entry.taskId ? toggleMuteTask(entry.taskId) : toggleMuteProject(entry.projectId)"
                 >
                   <svg v-if="!(entry.taskId ? mutedTaskIds.has(entry.taskId) : mutedProjectIds.has(entry.projectId))" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

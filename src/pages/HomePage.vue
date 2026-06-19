@@ -1,5 +1,6 @@
 <script setup>
 import PublicNav from '@/components/PublicNav.vue'
+import { t } from '@/utils/i18n'
 
 const features = [
   {
@@ -59,21 +60,19 @@ const steps = [
 
     <!-- Hero -->
     <section class="hero">
-      <h1 class="hero__title">Beheer projecten<br>zonder ruis</h1>
-      <p class="hero__subtitle">
-        Vecta geeft je team kanban-borden, deadlines, labels en reacties in een gerichte werkruimte.
-      </p>
+      <h1 class="hero__title">{{ t('heroTitle') }}</h1>
+      <p class="hero__subtitle">{{ t('heroSubtitle') }}</p>
       <div class="hero__cta">
-        <router-link to="/register" class="btn btn-primary btn-lg">Aan de slag</router-link>
-        <router-link to="/about" class="btn btn-ghost btn-lg">Meer informatie</router-link>
+        <router-link to="/register" class="btn btn-primary btn-lg">{{ t('getStarted') }}</router-link>
+        <router-link to="/about" class="btn btn-ghost btn-lg">{{ t('moreInfo') }}</router-link>
       </div>
     </section>
 
     <!-- Features -->
     <section class="features">
       <div class="features__inner">
-        <div class="section-label">Functies</div>
-        <h2 class="section-title">Alles wat je team nodig heeft</h2>
+        <div class="section-label">{{ t('features') }}</div>
+        <h2 class="section-title">{{ t('featuresTitle') }}</h2>
         <div class="features__grid">
           <div class="feature-card" v-for="f in features" :key="f.title">
             <div class="feature-icon">

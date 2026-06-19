@@ -236,31 +236,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /public/{token}:
-    get:
-      operationId: getPublicProject
-      summary: Public read-only project
-      security: []
-      parameters:
-        - name: token
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Public project payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicProject'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /projects/{id}/tasks:
     post:
       operationId: createTask

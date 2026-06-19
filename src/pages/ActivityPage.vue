@@ -6,6 +6,7 @@ import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
 import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
+import { t } from '@/utils/i18n'
 
 const router = useRouter()
 
@@ -86,8 +87,8 @@ function goToTask(task) {
     <div class="activity-page">
       <!-- Header -->
       <div class="page-header">
-        <h1 class="page-title">Alle taken</h1>
-        <p class="page-sub">Volledig overzicht van al je taken</p>
+        <h1 class="page-title">{{ t('allTasks') }}</h1>
+        <p class="page-sub">{{ t('allTasksOverview') }}</p>
       </div>
 
       <!-- Search bar -->
@@ -95,7 +96,7 @@ function goToTask(task) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Taken zoeken..."
+          :placeholder="t('searchTasksPlaceholder')"
           class="search-input"
         />
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="search-icon">
@@ -111,28 +112,28 @@ function goToTask(task) {
           :class="{ 'filter-btn--active': activeFilter === 'all' }"
           @click="activeFilter = 'all'"
         >
-          Alle taken ({{ stats.total }})
+          {{ t('allTasks') }} ({{ stats.total }})
         </button>
         <button
           class="filter-btn filter-btn--accent"
           :class="{ 'filter-btn--active': activeFilter === 'started' }"
           @click="activeFilter = 'started'"
         >
-          Bezig ({{ stats.started }})
+          {{ t('inProgress') }} ({{ stats.started }})
         </button>
         <button
           class="filter-btn filter-btn--warn"
           :class="{ 'filter-btn--active': activeFilter === 'overdue' }"
           @click="activeFilter = 'overdue'"
         >
-          Te laat ({{ stats.overdue }})
+          {{ t('overdue') }} ({{ stats.overdue }})
         </button>
         <button
           class="filter-btn filter-btn--done"
           :class="{ 'filter-btn--active': activeFilter === 'done' }"
           @click="activeFilter = 'done'"
         >
-          Klaar ({{ stats.done }})
+          {{ t('done') }} ({{ stats.done }})
         </button>
       </div>
 
@@ -142,16 +143,16 @@ function goToTask(task) {
           <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <p class="empty-title">Geen taken gevonden</p>
-          <p class="empty-desc">{{ searchQuery ? 'Pas je zoekopdracht aan' : 'Alle taken zijn afgerond of er zijn nog geen taken' }}</p>
+          <p class="empty-title">{{ t('noTasksFound') }}</p>
+          <p class="empty-desc">{{ searchQuery ? t('adjustSearch') : t('noTasksOrAllDone') }}</p>
         </div>
 
         <div v-else class="tasks-table">
-          <div class="table-header">
-            <div class="col-task">Taak</div>
-            <div class="col-project">Project</div>
-            <div class="col-status">Status</div>
-            <div class="col-deadline">Deadline</div>
+            <div class="table-header">
+            <div class="col-task">{{ t('task') }}</div>
+            <div class="col-project">{{ t('project') }}</div>
+            <div class="col-status">{{ t('status') }}</div>
+            <div class="col-deadline">{{ t('deadline') }}</div>
           </div>
           <div
             v-for="task in filteredTasks"

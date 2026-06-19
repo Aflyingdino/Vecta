@@ -12,6 +12,7 @@ function withoutTrailingSlash(value) {
 
 const BASE = withoutTrailingSlash(withLeadingSlash(envApiBase || DEFAULT_API_BASE))
 const CSRF_HEADER = 'X-CSRF-Token'
+const PLAN_KEYS = new Set(['free', 'standard', 'premium', 'premium_plus', 'enterprise'])
 
 let csrfToken = null
 let csrfPromise = null

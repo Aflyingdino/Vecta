@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { register, authLoading, authError, clearAuthError } from '@/stores/authStore'
 import { fetchProjects } from '@/stores/projectStore'
 import { getPlanList, getPlanLabel, formatLimit } from '@/utils/subscriptionPlans'
+import { t } from '@/utils/i18n'
 
 const router = useRouter()
 const plans = getPlanList()
@@ -29,10 +30,10 @@ function validateRegisterForm() {
   const trimmedName = name.value.trim()
   const trimmedEmail = email.value.trim().toLowerCase()
 
-  if (!trimmedName) return 'Naam is verplicht'
-  if (!trimmedEmail || !trimmedEmail.includes('@')) return 'Voer een geldig e-mailadres in'
-  if (!passwordValid.value) return 'Wachtwoord voldoet niet aan de eisen'
-  if (password.value !== confirm.value) return 'Wachtwoorden komen niet overeen'
+  if (!trimmedName) return t('nameRequired')
+  if (!trimmedEmail || !trimmedEmail.includes('@')) return t('invalidEmail')
+  if (!passwordValid.value) return t('passwordInvalid')
+  if (password.value !== confirm.value) return t('passwordsNoMatch')
   return null
 }
 
@@ -88,27 +89,27 @@ const displayError = () => localError.value || authError.value
         <img src="/logo.png" alt="TaskPilot logo" width="28" height="28" />
         <span>TaskPilot</span>
       </router-link>
-      <h1 class="auth-title">Account aanmaken</h1>
-      <p class="auth-sub">Kies direct je abonnement of ga gratis verder, zonder creditcard</p>
+      <h1 class="auth-title">{{ t('createAccount') }}</h1>
+      <p class="auth-sub">{{ t('createAccountSubtitle') }}</p>
 
       <div v-if="localError || authError" class="auth-error">{{ localError || authError }}</div>
 
       <form class="auth-form" @submit.prevent="handleRegister">
         <label class="form-label">
-          Full name
-          <input v-model="name" type="text" class="form-input" placeholder="Jane Smith" required autocomplete="name" />
+          {{ t('fullName') }}
+          <input v-model="name" type="text" class="form-input" :placeholder="t('fullNamePlaceholder')" required autocomplete="name" />
         </label>
         <label class="form-label">
-          Email
-          <input v-model="email" type="email" class="form-input" placeholder="you@example.com" required autocomplete="email" />
+          {{ t('email') }}
+          <input v-model="email" type="email" class="form-input" :placeholder="t('emailPlaceholder')" required autocomplete="email" />
         </label>
 
         <div class="plan-section">
-          <div class="form-label plan-label">Abonnement</div>
+          <div class="form-label plan-label">{{ t('subscription') }}</div>
           <button type="button" class="plan-picker-btn" @click="openPlanPicker">
             <div>
-              <span class="plan-picker-btn__title">Kies een plan</span>
-              <span class="plan-picker-btn__subtitle">Huidig: {{ getPlanLabel(selectedPlan) }}</span>
+              <span class="plan-picker-btn__title">{{ t('choosePlan') }}</span>
+              <span class="plan-picker-btn__subtitle">{{ t('current') }}: {{ getPlanLabel(selectedPlan) }}</span>
             </div>
             <span class="plan-picker-btn__chev">›</span>
           </button>
@@ -124,12 +125,12 @@ const displayError = () => localError.value || authError.value
         </label>
         <button type="submit" class="btn-submit" :disabled="authLoading">
           <span v-if="authLoading" class="spinner"></span>
-          {{ authLoading ? 'Creating account…' : 'Create account' }}
+          {{ authLoading ? t('creatingAccount') : t('createAccount') }}
         </button>
       </form>
 
       <p class="auth-switch">
-        Already have an account? <router-link to="/login">Log in</router-link>
+        {{ t('alreadyAccount') }} <router-link to="/login">{{ t('logIn') }}</router-link>
       </p>
 
       <Teleport to="body">
@@ -154,13 +155,13 @@ const displayError = () => localError.value || authError.value
               >
                 <span class="plan-choice__name">{{ getPlanLabel(plan.key) }}</span>
                 <span class="plan-choice__price">{{ plan.priceShort }}</span>
-                <span class="plan-choice__limit">{{ formatLimit(plan.limits.projects) }} projecten</span>
+                <span class="plan-choice__limit">{{ formatLimit(plan.limits.projects) }} {{ t('projects') }}</span>
               </button>
             </div>
 
             <div class="plan-modal__actions">
-              <button type="button" class="btn-secondary" @click="choosePlan('free')">Verder met Free</button>
-              <button type="button" class="btn-secondary btn-secondary--ghost" @click="closePlanPicker">Sluiten</button>
+              <button type="button" class="btn-secondary" @click="choosePlan('free')">{{ t('continueWithFree') }}</button>
+              <button type="button" class="btn-secondary btn-secondary--ghost" @click="closePlanPicker">{{ t('close') }}</button>
             </div>
           </div>
         </div>

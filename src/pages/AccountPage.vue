@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import AppLayout from '@/components/AppLayout.vue'
 import { user, updateSubscriptionPlan, authLoading } from '@/stores/authStore'
 import { getPlanList, getPlanLabel, formatLimit, canUseRoles } from '@/utils/subscriptionPlans'
+import { ui, setLanguage, setThemeMode } from '@/stores/uiStore'
+import { t } from '@/utils/i18n'
 
 const plans = getPlanList()
 const localError = ref('')
@@ -11,17 +13,18 @@ const currentPlan = computed(() => plans.find((plan) => plan.key === user.subscr
 const nextPlan = computed(() => plans.find((plan) => plan.key === user.subscriptionNextPlan) || null)
 
 function formatDateTime(value) {
-  if (!value) return 'Geen datum'
-  return new Intl.DateTimeFormat('nl-NL', {
+  if (!value) return t('noDate')
+  const locale = ui.language === 'en' ? 'en-GB' : 'nl-NL'
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
 }
 
 function planActionLabel(planKey) {
-  if (planKey === user.subscriptionPlan) return 'Huidig plan'
-  if (!user.subscriptionExpiresAt || user.subscriptionPlan === 'free') return 'Direct starten'
-  return 'Inplannen na afloop'
+  if (planKey === user.subscriptionPlan) return t('currentPlan')
+  if (!user.subscriptionExpiresAt || user.subscriptionPlan === 'free') return t('startNow')
+  return t('scheduleAfterExpiry')
 }
 
 async function choosePlan(planKey) {
@@ -39,8 +42,8 @@ async function choosePlan(planKey) {
     <div class="account-page">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Account</h1>
-          <p class="page-sub">Beheer je dabloons-abonnement en planrechten.</p>
+          <h1 class="page-title">{{ t('account') }}</h1>
+          <p class="page-sub">{{ t('accountSub') }}</p>
         </div>
       </div>
 
@@ -56,11 +59,11 @@ async function choosePlan(planKey) {
       <section class="account-card account-card--plan">
         <div class="plan-header">
           <div>
-            <p class="section-kicker">Huidig abonnement</p>
+              <p class="section-kicker">{{ t('currentSubscription') }}</p>
             <h2>{{ currentPlan.name }}</h2>
             <p class="plan-price">{{ currentPlan.price }}</p>
           </div>
-          <div class="plan-pill">{{ canUseRoles(user.subscriptionPlan) ? 'Rollen aan' : 'Geen rollen' }}</div>
+          <div class="plan-pill">{{ canUseRoles(user.subscriptionPlan) ? t('rolesOn') : t('noRoles') }}</div>
         </div>
         <div class="plan-status">
           <div>
@@ -81,6 +84,39 @@ async function choosePlan(planKey) {
         </div>
         <p v-if="localError" class="account-error">{{ localError }}</p>
       </section>
+
+        <section class="account-card account-card--settings">
+          <div class="settings-header">
+            <div>
+              <p class="section-kicker">{{ t('settings') }}</p>
+              <h2>{{ t('appearance') }}</h2>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <div class="settings-group">
+              <p class="settings-group-title">{{ t('appearance') }}</p>
+              <div class="settings-options">
+                <button class="option-btn" :class="{ 'option-btn--active': ui.lightMode }" @click="setThemeMode('light')" type="button">
+                  {{ t('light') }}
+                </button>
+                <button class="option-btn" :class="{ 'option-btn--active': !ui.lightMode }" @click="setThemeMode('dark')" type="button">
+                  {{ t('dark') }}
+                </button>
+              </div>
+            </div>
+            <div class="settings-group">
+              <p class="settings-group-title">{{ t('language') }}</p>
+              <div class="settings-options">
+                <button class="option-btn" :class="{ 'option-btn--active': ui.language === 'nl' }" @click="setLanguage('nl')" type="button">
+                  {{ t('dutch') }}
+                </button>
+                <button class="option-btn" :class="{ 'option-btn--active': ui.language === 'en' }" @click="setLanguage('en')" type="button">
+                  {{ t('english') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
       <section class="plan-grid">
         <button

@@ -6,6 +6,7 @@ import { openTaskDetail } from '@/stores/uiStore'
 import { updateTask } from '@/stores/boardStore'
 import { formatTime } from '@/utils/dates'
 import { APP_LOCALE, PRESET_COLORS } from '@/utils/constants'
+import { t } from '@/utils/i18n'
 
 /* ═══════════════════════════════════════════════
    VIEW MODE
@@ -514,18 +515,18 @@ function deadlineTasksForDay(date) {
       <!-- ── SIDEBAR ── -->
       <aside class="cal-sidebar">
         <div class="sidebar-head">
-          <span class="sidebar-title">Projecten</span>
+          <span class="sidebar-title">{{ t('projects') }}</span>
           <div class="sidebar-sort-row">
-            <select v-model="projectSort" class="sidebar-sort-select" aria-label="Sorteer projecten">
-              <option value="name_asc">Projecten: Naam</option>
-              <option value="tasks_desc">Projecten: Aantal taken</option>
-              <option value="recent_desc">Projecten: Recent actief</option>
+            <select v-model="projectSort" class="sidebar-sort-select" :aria-label="t('sortProjects')">
+              <option value="name_asc">{{ t('projectsByName') }}</option>
+              <option value="tasks_desc">{{ t('projectsByTasks') }}</option>
+              <option value="recent_desc">{{ t('projectsByRecent') }}</option>
             </select>
-            <select v-model="taskSort" class="sidebar-sort-select" aria-label="Sorteer taken">
-              <option value="recent_desc">Taken: Recent gewijzigd</option>
-              <option value="deadline_asc">Taken: Deadline eerst</option>
-              <option value="status">Taken: Status</option>
-              <option value="name_asc">Taken: Naam</option>
+            <select v-model="taskSort" class="sidebar-sort-select" :aria-label="t('sortTasks')">
+              <option value="recent_desc">{{ t('tasksByRecent') }}</option>
+              <option value="deadline_asc">{{ t('tasksByDeadline') }}</option>
+              <option value="status">{{ t('tasksByStatus') }}</option>
+              <option value="name_asc">{{ t('tasksByName') }}</option>
             </select>
           </div>
         </div>
@@ -551,7 +552,7 @@ function deadlineTasksForDay(date) {
               <div
                 v-if="p.allTasks.length === 0"
                 class="sb-task-empty"
-              >Geen taken</div>
+              >{{ t('noTasks') }}</div>
               <div
                 v-for="t in p.allTasks"
                 :key="t.id"
@@ -588,12 +589,12 @@ function deadlineTasksForDay(date) {
                 class="view-btn"
                 :class="{ 'view-btn--active': viewMode === 'schedule' }"
                 @click="viewMode = 'schedule'"
-              >Planning</button>
+              >{{ t('planning') }}</button>
               <button
                 class="view-btn"
                 :class="{ 'view-btn--active': viewMode === 'deadline' }"
                 @click="viewMode = 'deadline'"
-              >Deadlines</button>
+              >{{ t('deadlines') }}</button>
             </div>
           </div>
 
@@ -610,7 +611,7 @@ function deadlineTasksForDay(date) {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
-            <button v-if="!isCurrentWeek" class="today-btn" @click="goThisWeek">Naar deze week</button>
+            <button v-if="!isCurrentWeek" class="today-btn" @click="goThisWeek">{{ t('goThisWeek') }}</button>
           </div>
 
           <!-- Deadline nav -->
@@ -626,18 +627,18 @@ function deadlineTasksForDay(date) {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
-            <button v-if="!isCurrentMonth" class="today-btn" @click="goThisMonth">Naar deze maand</button>
+            <button v-if="!isCurrentMonth" class="today-btn" @click="goThisMonth">{{ t('goThisMonth') }}</button>
           </div>
 
           <!-- Zoom (only schedule) -->
           <div class="cal-topbar-right">
             <template v-if="viewMode === 'schedule'">
-              <button class="zoom-btn" @click="zoomOut" title="Uitzoomen">
+              <button class="zoom-btn" @click="zoomOut" :title="t('zoomOut')">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" d="M20 12H4"/>
                 </svg>
               </button>
-              <button class="zoom-btn" @click="zoomIn" title="Inzoomen">
+              <button class="zoom-btn" @click="zoomIn" :title="t('zoomIn')">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" d="M12 4v16M4 12h16"/>
                 </svg>
@@ -722,7 +723,7 @@ function deadlineTasksForDay(date) {
                     class="resize-handle resize-handle--top"
                     @mousedown.stop="startTopResize($event, task)"
                     @dragstart.stop.prevent
-                    title="Drag to change start time"
+                    :title="t('dragChangeStart')"
                   ></div>
                   <div
                     class="task-block-inner"
@@ -736,7 +737,7 @@ function deadlineTasksForDay(date) {
                   </div>
                   <!-- Color palette — direct child of task-block (not inside inner) so it is not clipped -->
                   <div class="task-tint-wrap" @click.stop>
-                    <button class="task-tint-btn" @click.stop="activeTintTaskId = activeTintTaskId === task.id ? null : task.id" title="Kleur wijzigen">
+                    <button class="task-tint-btn" @click.stop="activeTintTaskId = activeTintTaskId === task.id ? null : task.id" :title="t('changeColor')">
                       <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     </button>
                     <div v-if="activeTintTaskId === task.id" class="task-tint-palette">
@@ -750,7 +751,7 @@ function deadlineTasksForDay(date) {
                       <button
                         class="tint-swatch tint-swatch--none"
                         @click.stop="updateTask(task.id, { calendarColor: null }); activeTintTaskId = null"
-                        title="Kleur wissen"
+                        :title="t('clearColor')"
                       >✕</button>
                     </div>
                   </div>
@@ -758,7 +759,7 @@ function deadlineTasksForDay(date) {
                     class="resize-handle"
                     @mousedown.stop="startResize($event, task)"
                     @dragstart.stop.prevent
-                    title="Slepen om grootte te wijzigen"
+                    :title="t('dragResize')"
                   ></div>
                 </div>
               </div>
