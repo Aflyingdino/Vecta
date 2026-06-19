@@ -1,1 +1,0 @@
-import{B as r}from"./AppLayout-C84NQnz3.js";function n(t){return t?new Date(t).toLocaleDateString(r,{day:"2-digit",month:"short"}):""}function a(t){return t?new Date(t).toLocaleDateString(r,{day:"2-digit",month:"short",year:"numeric"}):""}function o(t){return t?new Date(t).toLocaleTimeString(r,{hour:"2-digit",minute:"2-digit",hour12:!1}):""}export{n as a,o as b,a as f};

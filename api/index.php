@@ -29,7 +29,6 @@ require_once __DIR__ . '/routes/labels.php';
 require_once __DIR__ . '/routes/comments.php';
 require_once __DIR__ . '/routes/notes.php';
 require_once __DIR__ . '/routes/members.php';
-require_once __DIR__ . '/routes/share.php';
 
 /**
  * @param array<string,string> $params
@@ -72,11 +71,6 @@ function defineRoutes(): array
         route('POST', '/projects/{id}/members', static fn(array $p) => handleAddMember((int) $p['id'])),
         route('PATCH', '/projects/{pid}/members/{uid}', static fn(array $p) => handleUpdateMemberRole((int) $p['pid'], (int) $p['uid'])),
         route('DELETE', '/projects/{pid}/members/{uid}', static fn(array $p) => handleRemoveMember((int) $p['pid'], (int) $p['uid'])),
-
-        // Share
-        route('POST', '/projects/{id}/share', static fn(array $p) => handleGenerateShare((int) $p['id'])),
-        route('DELETE', '/projects/{id}/share', static fn(array $p) => handleRevokeShare((int) $p['id'])),
-        route('GET', '/public/{token}', static fn(array $p) => handleGetPublicProject($p['token'])),
 
         // Groups
         route('POST', '/projects/{id}/groups', static fn(array $p) => handleCreateGroup((int) $p['id'])),
