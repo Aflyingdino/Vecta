@@ -41,10 +41,20 @@ export async function fetchProjects() {
   try {
     const data = await api.get('/projects')
     _state.projects = data
+    _state.error = null
   } catch (err) {
     _state.error = err.message
   } finally {
     _state.loading = false
+  }
+}
+
+export async function refreshProjects() {
+  try {
+    const data = await api.get('/projects')
+    _state.projects = data
+  } catch (err) {
+    console.warn('Project sync failed:', err)
   }
 }
 
@@ -108,6 +118,11 @@ export async function addMember(projectId, email, role = 'collaborator') {
   const member = await api.post(`/projects/${projectId}/members`, { email, role })
   const p = _state.projects.find(p => p.id === projectId)
   if (p) p.members.push(member)
+}
+
+export async function inviteMember(projectId, email, role = 'collaborator') {
+  const invitation = await api.post(`/projects/${projectId}/invites`, { email, role })
+  return invitation
 }
 
 export async function removeMember(projectId, memberId) {

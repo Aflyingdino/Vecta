@@ -7,13 +7,14 @@ import { projects, setActiveProject } from '@/stores/projectStore'
 import { user } from '@/stores/authStore'
 import { openTaskDetail } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds, toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
+import { pendingInvitations, acceptInvitation, declineInvitation, invitationLoading } from '@/stores/invitationStore'
 import { readJson, writeJson } from '@/utils/safeStorage'
 import { APP_LOCALE, STATUS_META, isInProgressStatus } from '@/utils/constants'
 
 
 const router = useRouter()
 
-const activeTab = ref('overview') // 'overview' | 'projects' | 'activity'
+const activeTab = ref('overview') // 'overview' | 'projects' | 'invitations' | 'activity'
 
 // Gather all tasks across all projects
 const allTasks = computed(() => {
@@ -150,8 +151,33 @@ const statFilterLabel = computed(() => ({
   started: 'Bezig', overdue: 'Te laat', done: 'Klaar'
 })[statFilter.value])
 
+const invitationCount = computed(() => pendingInvitations.value.length)
+const invitationFeedback = ref('')
+
 function toggleStatFilter(key) {
   statFilter.value = statFilter.value === key ? null : key
+}
+
+async function acceptInvite(invitationId) {
+  invitationFeedback.value = ''
+  try {
+    const result = await acceptInvitation(invitationId)
+    if (result?.projectId) {
+      setActiveProject(result.projectId)
+      router.push({ name: 'board', params: { id: result.projectId } })
+    }
+  } catch (err) {
+    invitationFeedback.value = err.message
+  }
+}
+
+async function declineInvite(invitationId) {
+  invitationFeedback.value = ''
+  try {
+    await declineInvitation(invitationId)
+  } catch (err) {
+    invitationFeedback.value = err.message
+  }
 }
 
 // ── Activity: read state ──
@@ -290,6 +316,14 @@ function goToActivityTask(entry) {
         </button>
         <button
           class="dash-tab"
+          :class="{ 'dash-tab--active': activeTab === 'invitations' }"
+          @click="activeTab = 'invitations'"
+        >
+          {{ t('invitations') }}
+          <span class="tab-badge tab-badge--warn" v-if="invitationCount">{{ invitationCount }}</span>
+        </button>
+        <button
+          class="dash-tab"
           :class="{ 'dash-tab--active': activeTab === 'activity' }"
           @click="activeTab = 'activity'"
         >
@@ -388,6 +422,46 @@ function goToActivityTask(entry) {
             </div>
             <div v-else class="empty-section">
               <p><router-link to="/projects">{{ t('createFirstProject') }}</router-link></p>
+            </div>
+          </section>
+        </div>
+      </template>
+
+      <!-- ── Invitations tab ───────────────────────── -->
+      <template v-if="activeTab === 'invitations'">
+        <div class="tab-panel">
+          <section class="dash-section">
+            <h2 class="section-title">
+              <span class="dot dot--purple"></span>
+              {{ t('invitations') }} ({{ invitationCount }})
+            </h2>
+
+            <template v-if="pendingInvitations.length">
+              <div class="project-list">
+                <div
+                  v-for="invite in pendingInvitations"
+                  :key="invite.id"
+                  class="project-row project-row--invite"
+                >
+                  <div class="project-row__icon" :style="{ background: invite.projectColor }">{{ invite.projectName[0] }}</div>
+                  <div class="project-row__info">
+                    <span class="project-row__name">{{ invite.projectName }}</span>
+                    <span class="project-row__count">
+                      {{ t('invitedBy') }} {{ invite.invitedBy }} · {{ invite.role }}
+                    </span>
+                  </div>
+                  <div class="invite-actions">
+                    <button class="invite-action-btn invite-action-btn--accept" :disabled="invitationLoading" @click="acceptInvite(invite.id)">{{ t('accept') }}</button>
+                    <button class="invite-action-btn invite-action-btn--decline" :disabled="invitationLoading" @click="declineInvite(invite.id)">{{ t('decline') }}</button>
+                  </div>
+                </div>
+              </div>
+
+              <p v-if="invitationFeedback" class="invitation-feedback">{{ invitationFeedback }}</p>
+            </template>
+
+            <div v-else class="empty-section">
+              <p>{{ t('noInvitations') }}</p>
             </div>
           </section>
         </div>
@@ -745,6 +819,7 @@ function goToActivityTask(entry) {
 .dot--blue   { background: #5b5bd6; }
 .dot--green  { background: #46a758; }
 .dot--orange { background: #f76b15; }
+.dot--purple { background: #8e4ec6; }
 
 /* Task rows */
 .task-list { display: flex; flex-direction: column; }
@@ -813,6 +888,53 @@ function goToActivityTask(entry) {
 .project-row__name { font-size: 13px; font-weight: 600; color: var(--color-text-1); display: block; }
 .project-row__count { font-size: 11px; color: var(--color-text-3); }
 .arrow { color: var(--color-text-3); }
+.project-row--invite {
+  align-items: center;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.invite-action-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.invite-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.invite-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.invite-action-btn--accept {
+  background: color-mix(in srgb, #46a758 18%, transparent);
+  border-color: color-mix(in srgb, #46a758 35%, transparent);
+  color: #46a758;
+}
+
+.invite-action-btn--decline {
+  background: color-mix(in srgb, #e5484d 18%, transparent);
+  border-color: color-mix(in srgb, #e5484d 35%, transparent);
+  color: #e5484d;
+}
+
+.invitation-feedback {
+  margin: 12px 18px 0;
+  font-size: 12px;
+  color: var(--color-danger);
+}
 
 /* Activity feed — base shared styles */
 .activity-list { display: flex; flex-direction: column; }
