@@ -302,7 +302,7 @@ function currentUserSubscriptionPlan(int $userId): string
 
 function refreshUserSubscriptionState(int $userId): ?array
 {
-    $stmt = db()->prepare('SELECT user_id, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, created_at, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
 
@@ -338,7 +338,7 @@ function refreshUserSubscriptionState(int $userId): ?array
             ->execute([$userId, $currentPlan, 'free', 'expire', $row['subscription_started_at'] ?? null, $row['subscription_expires_at'] ?? null]);
     }
 
-    $stmt = db()->prepare('SELECT user_id, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
+    $stmt = db()->prepare('SELECT user_id, name, email, created_at, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     return $stmt->fetch() ?: $row;
 }
