@@ -69,9 +69,9 @@ define('SUBSCRIPTION_PLANS', [
         'rolesEnabled' => false,
         'durationDays' => null,
         'limits' => [
-            'projects' => 1,
-            'groups' => 5,
-            'archivedGroups' => 10,
+            'projects' => 10,
+            'groups' => 20,
+            'archivedGroups' => 50,
             'collaborators' => 2,
             'planningWindowDays' => 7,
         ],

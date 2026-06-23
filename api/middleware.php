@@ -14,7 +14,7 @@ function requireCsrfProtection(): void
 
 function applyRequestGuards(string $method, string $path): void
 {
-    if ($method === 'POST' || $method === 'PATCH') {
+    if (($method === 'POST' || $method === 'PATCH') && requestHasBody()) {
         requireJsonRequest();
     }
 
