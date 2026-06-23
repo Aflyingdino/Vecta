@@ -13,9 +13,10 @@ function currentUserEmail(int $userId): ?string
 
 function fetchInvitationById(int $invitationId): ?array
 {
+    ensureRuntimeSchema();
     $stmt = db()->prepare('
-        SELECT i.invitation_id, i.project_id, i.invited_email, i.role, i.invited_by_user_id, i.status,
-               i.accepted_by_user_id, i.invited_at, i.responded_at,
+        SELECT i.invitation_id, i.project_id, i.invited_email, i.token, i.role, i.invited_by_user_id, i.status,
+               i.expires_at, i.accepted_by_user_id, i.invited_at, i.responded_at,
                p.title AS project_title, p.description AS project_description, p.main_color AS project_color,
                p.archived_at AS project_archived_at,
                u.name AS inviter_name
@@ -29,6 +30,25 @@ function fetchInvitationById(int $invitationId): ?array
     return $row ?: null;
 }
 
+function fetchInvitationByToken(string $token): ?array
+{
+    ensureRuntimeSchema();
+    $stmt = db()->prepare('
+        SELECT i.invitation_id, i.project_id, i.invited_email, i.token, i.role, i.invited_by_user_id, i.status,
+               i.expires_at, i.accepted_by_user_id, i.invited_at, i.responded_at,
+               p.title AS project_title, p.description AS project_description, p.main_color AS project_color,
+               p.archived_at AS project_archived_at,
+               u.name AS inviter_name
+        FROM project_invitations i
+        JOIN projects p ON p.project_id = i.project_id
+        JOIN users u ON u.user_id = i.invited_by_user_id
+        WHERE i.token = ?
+    ');
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
 function formatInvitationRow(array $row): array
 {
     return [
@@ -38,9 +58,12 @@ function formatInvitationRow(array $row): array
         'projectDescription' => $row['project_description'] ?? '',
         'projectColor' => $row['project_color'] ?? '#5b5bd6',
         'email' => normalizeEmail($row['invited_email']),
+        'token' => $row['token'] ?? null,
+        'inviteUrl' => !empty($row['token']) ? rtrim(APP_URL, '/') . '/invite/' . $row['token'] : null,
         'role' => $row['role'],
         'invitedBy' => $row['inviter_name'],
         'status' => $row['status'],
+        'expiresAt' => $row['expires_at'] ?? null,
         'invitedAt' => $row['invited_at'],
         'respondedAt' => $row['responded_at'],
         'projectArchived' => $row['project_archived_at'] !== null,
@@ -49,6 +72,7 @@ function formatInvitationRow(array $row): array
 
 function handleListInvitations(): never
 {
+    ensureRuntimeSchema();
     $uid = requireAuth();
     $email = currentUserEmail($uid);
     if ($email === null) {
@@ -56,8 +80,8 @@ function handleListInvitations(): never
     }
 
     $stmt = db()->prepare("
-        SELECT i.invitation_id, i.project_id, i.invited_email, i.role, i.invited_by_user_id, i.status,
-               i.accepted_by_user_id, i.invited_at, i.responded_at,
+        SELECT i.invitation_id, i.project_id, i.invited_email, i.token, i.role, i.invited_by_user_id, i.status,
+               i.expires_at, i.accepted_by_user_id, i.invited_at, i.responded_at,
                p.title AS project_title, p.description AS project_description, p.main_color AS project_color,
                p.archived_at AS project_archived_at,
                u.name AS inviter_name
@@ -74,6 +98,7 @@ function handleListInvitations(): never
 
 function handleCreateInvitation(int $projectId): never
 {
+    ensureRuntimeSchema();
     $uid = requireAuth();
     requireProjectAdmin($projectId, $uid);
 
@@ -85,7 +110,8 @@ function handleCreateInvitation(int $projectId): never
         jsonError('Invalid email address', 422);
     }
 
-    $role = requireEnumValue($data['role'] ?? 'collaborator', ['admin', 'collaborator'], 'role');
+    $role = canonicalProjectRole((string) ($data['role'] ?? 'collaborator'));
+    $role = requireEnumValue($role, ['admin', 'collaborator', 'viewer'], 'role');
     if ($role === 'admin') {
         if (!currentUserRolesEnabled($uid)) {
             jsonError('Roles are not available on your plan', 403);
@@ -99,6 +125,8 @@ function handleCreateInvitation(int $projectId): never
     }
 
     $db = db();
+    $token = bin2hex(random_bytes(32));
+    $expiresAt = (new DateTimeImmutable('now'))->modify('+14 days')->format('Y-m-d H:i:s');
 
     $stmt = $db->prepare('SELECT user_id, name, email FROM users WHERE email = ?');
     $stmt->execute([$email]);
@@ -112,12 +140,12 @@ function handleCreateInvitation(int $projectId): never
     $existing = $stmt->fetch();
 
     if ($existing) {
-        $stmt = $db->prepare('UPDATE project_invitations SET role = ?, invited_by_user_id = ?, invited_at = NOW(), responded_at = NULL, accepted_by_user_id = NULL WHERE invitation_id = ?');
-        $stmt->execute([$role, $uid, (int) $existing['invitation_id']]);
+        $stmt = $db->prepare('UPDATE project_invitations SET role = ?, token = ?, invited_by_user_id = ?, invited_at = NOW(), expires_at = ?, responded_at = NULL, accepted_by_user_id = NULL WHERE invitation_id = ?');
+        $stmt->execute([$role, $token, $uid, $expiresAt, (int) $existing['invitation_id']]);
         $invitationId = (int) $existing['invitation_id'];
     } else {
-        $stmt = $db->prepare('INSERT INTO project_invitations (project_id, invited_email, role, invited_by_user_id) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$projectId, $email, $role, $uid]);
+        $stmt = $db->prepare('INSERT INTO project_invitations (project_id, invited_email, token, role, invited_by_user_id, expires_at) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$projectId, $email, $token, $role, $uid, $expiresAt]);
         $invitationId = (int) $db->lastInsertId();
     }
 
@@ -127,8 +155,32 @@ function handleCreateInvitation(int $projectId): never
     }
 
     logActivity($projectId, $uid, 'member_invited', sprintf('Invitation sent to %s as %s', $email, $role));
+    if ($targetUser) {
+        createNotification((int) $targetUser['user_id'], 'invitation_received', 'Project invitation received', sprintf('%s invited you to %s', $invitation['inviter_name'], $invitation['project_title']), $projectId);
+    }
 
     jsonResponse(formatInvitationRow($invitation), $existing ? 200 : 201);
+}
+
+function handleGetInvitationByToken(string $token): never
+{
+    $uid = requireAuth();
+    $email = currentUserEmail($uid);
+    $invitation = fetchInvitationByToken($token);
+    if (!$invitation) {
+        jsonError('Invitation not found', 404);
+    }
+    if (normalizeEmail($invitation['invited_email']) !== $email) {
+        jsonError('This invitation is not for your account', 403);
+    }
+    if ($invitation['status'] !== 'pending') {
+        jsonError('Invitation is no longer pending', 409);
+    }
+    if (!empty($invitation['expires_at']) && new DateTimeImmutable($invitation['expires_at']) < new DateTimeImmutable('now')) {
+        jsonError('Invitation has expired', 410);
+    }
+
+    jsonResponse(formatInvitationRow($invitation));
 }
 
 function handleAcceptInvitation(int $invitationId): never
@@ -151,6 +203,9 @@ function handleAcceptInvitation(int $invitationId): never
     if ($invitation['status'] !== 'pending') {
         jsonError('Invitation is no longer pending', 409);
     }
+    if (!empty($invitation['expires_at']) && new DateTimeImmutable($invitation['expires_at']) < new DateTimeImmutable('now')) {
+        jsonError('Invitation has expired', 410);
+    }
 
     $projectId = (int) $invitation['project_id'];
     $role = $invitation['role'];
@@ -167,6 +222,7 @@ function handleAcceptInvitation(int $invitationId): never
         ->execute(['accepted', $uid, $invitationId]);
 
     logActivity($projectId, $uid, 'member_joined', 'Invitation accepted');
+    createNotification((int) $invitation['invited_by_user_id'], 'invitation_accepted', 'Invitation accepted', sprintf('%s joined %s', $email, $invitation['project_title']), $projectId);
 
     jsonResponse([
         'invitationId' => $invitationId,
@@ -204,4 +260,27 @@ function handleDeclineInvitation(int $invitationId): never
         'projectId' => (int) $invitation['project_id'],
         'status' => 'declined',
     ]);
+}
+
+function handleAcceptInvitationByToken(string $token): never
+{
+    $invitation = fetchInvitationByToken($token);
+    if (!$invitation) {
+        jsonError('Invitation not found', 404);
+    }
+    handleAcceptInvitation((int) $invitation['invitation_id']);
+}
+
+function handleRevokeInvitation(int $invitationId): never
+{
+    $uid = requireAuth();
+    $invitation = fetchInvitationById($invitationId);
+    if (!$invitation) {
+        jsonError('Invitation not found', 404);
+    }
+    requireProjectAdmin((int) $invitation['project_id'], $uid);
+    db()->prepare('UPDATE project_invitations SET status = ?, responded_at = NOW() WHERE invitation_id = ?')
+        ->execute(['cancelled', $invitationId]);
+    logActivity((int) $invitation['project_id'], $uid, 'invitation_revoked', sprintf('Invitation for %s revoked', $invitation['invited_email']));
+    jsonResponse(['invitationId' => $invitationId, 'projectId' => (int) $invitation['project_id'], 'status' => 'cancelled']);
 }

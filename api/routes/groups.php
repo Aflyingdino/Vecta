@@ -18,7 +18,7 @@ function resolveGroup(int $groupId, int $userId): array
 function handleCreateGroup(int $projectId): never
 {
     $uid = requireAuth();
-    requireProjectAccess($projectId, $uid);
+    requireProjectWritable($projectId, $uid);
 
     $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
     $groupLimit = $plan['limits']['groups'] ?? null;
@@ -78,6 +78,7 @@ function handleUpdateGroup(int $groupId): never
     $uid   = requireAuth();
     $group = resolveGroup($groupId, $uid);
     $pid   = (int) $group['project_id'];
+    requireProjectWritable($pid, $uid);
     $data  = jsonBody();
     $db    = db();
 
@@ -131,6 +132,7 @@ function handleDeleteGroup(int $groupId): never
     $uid   = requireAuth();
     $group = resolveGroup($groupId, $uid);
     $pid   = (int) $group['project_id'];
+    requireProjectWritable($pid, $uid);
 
     $db = db();
 
@@ -148,6 +150,7 @@ function handleArchiveGroup(int $groupId): never
 {
     $uid   = requireAuth();
     $group = resolveGroup($groupId, $uid);
+    requireProjectWritable((int) $group['project_id'], $uid);
 
     $plan = subscriptionPlanMeta(currentUserSubscriptionPlan($uid));
     $archiveLimit = $plan['limits']['archivedGroups'] ?? null;
@@ -171,6 +174,7 @@ function handleRestoreGroup(int $groupId): never
 {
     $uid   = requireAuth();
     $group = resolveGroup($groupId, $uid);
+    requireProjectWritable((int) $group['project_id'], $uid);
 
     db()->prepare('UPDATE board_groups SET archived_at = NULL WHERE group_id = ?')
         ->execute([$groupId]);

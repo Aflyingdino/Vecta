@@ -33,7 +33,7 @@ function requireProjectGroup(?int $groupId, int $projectId): ?int
 function handleCreateTask(int $projectId): never
 {
     $uid = requireAuth();
-    requireProjectAccess($projectId, $uid);
+    requireProjectWritable($projectId, $uid);
 
     $data = jsonBody();
     requireFields($data, ['text']);
@@ -98,6 +98,7 @@ function handleUpdateTask(int $taskId): never
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
     $pid  = (int) $task['project_id'];
+    requireProjectWritable($pid, $uid);
     $data = jsonBody();
     $db   = db();
 
@@ -154,6 +155,7 @@ function handleDeleteTask(int $taskId): never
 {
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
 
     db()->prepare('DELETE FROM tasks WHERE task_id = ?')->execute([$taskId]);
 
@@ -166,6 +168,7 @@ function handleMoveTask(int $taskId): never
 {
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
     $data = jsonBody();
 
     $groupId = array_key_exists('groupId', $data) ? ($data['groupId'] !== null ? (int) $data['groupId'] : null) : false;
@@ -184,6 +187,7 @@ function handleArchiveTask(int $taskId): never
 {
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
 
     db()->prepare('UPDATE tasks SET archived_at = NOW() WHERE task_id = ?')
         ->execute([$taskId]);
@@ -197,6 +201,7 @@ function handleRestoreTask(int $taskId): never
 {
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
 
     db()->prepare('UPDATE tasks SET archived_at = NULL WHERE task_id = ?')
         ->execute([$taskId]);
@@ -210,6 +215,7 @@ function handleScheduleTask(int $taskId): never
 {
     $uid  = requireAuth();
     $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
     $data = jsonBody();
 
     $start    = requireNullableDateTime($data['calendarStart'] ?? null, 'calendarStart');
@@ -239,7 +245,8 @@ function handleScheduleTask(int $taskId): never
 function handleUnscheduleTask(int $taskId): never
 {
     $uid  = requireAuth();
-    resolveTask($taskId, $uid);
+    $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
 
     db()->prepare('UPDATE tasks SET scheduled_start = NULL, duration_minutes = NULL WHERE task_id = ?')
         ->execute([$taskId]);

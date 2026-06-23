@@ -5,6 +5,7 @@
 
 function handleRegister(): never
 {
+    ensureRuntimeSchema();
     $data = jsonBody();
     requireFields($data, ['name', 'email', 'password']);
 
@@ -71,6 +72,7 @@ function handleRegister(): never
 
 function handleLogin(): never
 {
+    ensureRuntimeSchema();
     $data = jsonBody();
     requireFields($data, ['email', 'password']);
 
@@ -127,6 +129,7 @@ function handleLogout(): never
 
 function handleMe(): never
 {
+    ensureRuntimeSchema();
     $uid = currentUserId();
     if (!$uid) jsonError('Not authenticated', 401);
 

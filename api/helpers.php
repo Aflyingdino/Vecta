@@ -265,6 +265,149 @@ function validColor(?string $color): bool
     return (bool) preg_match('/^#[0-9a-fA-F]{6}$/', $color);
 }
 
+function runtimeTableExists(string $table): bool
+{
+    $stmt = db()->prepare('
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+    ');
+    $stmt->execute([$table]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function runtimeColumnExists(string $table, string $column): bool
+{
+    $stmt = db()->prepare('
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+    ');
+    $stmt->execute([$table, $column]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function runtimeIndexExists(string $table, string $index): bool
+{
+    $stmt = db()->prepare('
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND INDEX_NAME = ?
+    ');
+    $stmt->execute([$table, $index]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function runtimeEnumContains(string $table, string $column, string $value): bool
+{
+    $stmt = db()->prepare('
+        SELECT COLUMN_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+    ');
+    $stmt->execute([$table, $column]);
+    $type = (string) ($stmt->fetchColumn() ?: '');
+    return str_contains($type, "'" . $value . "'");
+}
+
+function runtimeAddColumn(string $table, string $column, string $sql): void
+{
+    if (runtimeTableExists($table) && !runtimeColumnExists($table, $column)) {
+        db()->exec($sql);
+    }
+}
+
+function runtimeAddIndex(string $table, string $index, string $sql): void
+{
+    if (runtimeTableExists($table) && !runtimeIndexExists($table, $index)) {
+        db()->exec($sql);
+    }
+}
+
+function ensureRuntimeSchema(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    runtimeAddColumn('users', 'subscription_plan', "ALTER TABLE users ADD COLUMN subscription_plan ENUM('free','standard','premium','premium_plus','enterprise') NOT NULL DEFAULT 'free' AFTER password_hash");
+    runtimeAddColumn('users', 'subscription_updated_at', 'ALTER TABLE users ADD COLUMN subscription_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER subscription_plan');
+    runtimeAddColumn('users', 'subscription_started_at', 'ALTER TABLE users ADD COLUMN subscription_started_at DATETIME DEFAULT NULL AFTER subscription_plan');
+    runtimeAddColumn('users', 'subscription_expires_at', 'ALTER TABLE users ADD COLUMN subscription_expires_at DATETIME DEFAULT NULL AFTER subscription_started_at');
+    runtimeAddColumn('users', 'subscription_next_plan', "ALTER TABLE users ADD COLUMN subscription_next_plan ENUM('free','standard','premium','premium_plus','enterprise') DEFAULT NULL AFTER subscription_expires_at");
+    runtimeAddColumn('users', 'subscription_next_starts_at', 'ALTER TABLE users ADD COLUMN subscription_next_starts_at DATETIME DEFAULT NULL AFTER subscription_next_plan');
+    runtimeAddColumn('users', 'subscription_next_expires_at', 'ALTER TABLE users ADD COLUMN subscription_next_expires_at DATETIME DEFAULT NULL AFTER subscription_next_starts_at');
+    runtimeAddColumn('tasks', 'archived_at', 'ALTER TABLE tasks ADD COLUMN archived_at DATETIME DEFAULT NULL AFTER created_at');
+
+    if (!runtimeTableExists('project_invitations')) {
+        db()->exec("
+            CREATE TABLE project_invitations (
+                invitation_id INT AUTO_INCREMENT PRIMARY KEY,
+                project_id INT NOT NULL,
+                invited_email VARCHAR(150) NOT NULL,
+                token VARCHAR(64) DEFAULT NULL,
+                role ENUM('admin','collaborator','viewer') NOT NULL DEFAULT 'collaborator',
+                invited_by_user_id INT NOT NULL,
+                status ENUM('pending','accepted','declined','cancelled') NOT NULL DEFAULT 'pending',
+                expires_at DATETIME DEFAULT NULL,
+                accepted_by_user_id INT DEFAULT NULL,
+                invited_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                responded_at DATETIME DEFAULT NULL,
+                CONSTRAINT fk_project_invitations_project FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+                CONSTRAINT fk_project_invitations_inviter FOREIGN KEY (invited_by_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                CONSTRAINT fk_project_invitations_accepted_by FOREIGN KEY (accepted_by_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+                UNIQUE INDEX idx_project_invitations_token (token),
+                INDEX idx_project_invitations_email_status (invited_email, status, invited_at),
+                INDEX idx_project_invitations_project_status (project_id, status, invited_at)
+            ) ENGINE=InnoDB
+        ");
+    } else {
+        runtimeAddColumn('project_invitations', 'token', 'ALTER TABLE project_invitations ADD COLUMN token VARCHAR(64) DEFAULT NULL AFTER invited_email');
+        runtimeAddColumn('project_invitations', 'expires_at', 'ALTER TABLE project_invitations ADD COLUMN expires_at DATETIME DEFAULT NULL AFTER status');
+        runtimeAddIndex('project_invitations', 'idx_project_invitations_token', 'CREATE UNIQUE INDEX idx_project_invitations_token ON project_invitations(token)');
+    }
+
+    if (runtimeTableExists('project_members') && !runtimeEnumContains('project_members', 'role', 'viewer')) {
+        db()->exec("ALTER TABLE project_members MODIFY role ENUM('owner','admin','collaborator','viewer') NOT NULL");
+    }
+    if (runtimeTableExists('project_invitations') && !runtimeEnumContains('project_invitations', 'role', 'viewer')) {
+        db()->exec("ALTER TABLE project_invitations MODIFY role ENUM('admin','collaborator','viewer') NOT NULL DEFAULT 'collaborator'");
+    }
+
+    if (!runtimeTableExists('notifications')) {
+        db()->exec("
+            CREATE TABLE notifications (
+                notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_id INT DEFAULT NULL,
+                task_id INT DEFAULT NULL,
+                type VARCHAR(60) NOT NULL,
+                title VARCHAR(150) NOT NULL,
+                body TEXT,
+                read_at DATETIME DEFAULT NULL,
+                archived_at DATETIME DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                CONSTRAINT fk_notifications_project FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+                CONSTRAINT fk_notifications_task FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE SET NULL,
+                INDEX idx_notifications_user_read_created (user_id, read_at, created_at),
+                INDEX idx_notifications_project_created (project_id, created_at)
+            ) ENGINE=InnoDB
+        ");
+    }
+
+    $done = true;
+}
+
 function subscriptionPlanKey(?string $plan): string
 {
     $key = strtolower(trim((string) $plan));
@@ -301,6 +444,7 @@ function validSubscriptionPlan(?string $plan): bool
 
 function currentUserSubscriptionPlan(int $userId): string
 {
+    ensureRuntimeSchema();
     refreshUserSubscriptionState($userId);
 
     $stmt = db()->prepare('SELECT subscription_plan FROM users WHERE user_id = ?');
@@ -311,6 +455,7 @@ function currentUserSubscriptionPlan(int $userId): string
 
 function refreshUserSubscriptionState(int $userId): ?array
 {
+    ensureRuntimeSchema();
     $stmt = db()->prepare('SELECT user_id, name, email, created_at, subscription_plan, subscription_started_at, subscription_expires_at, subscription_next_plan, subscription_next_starts_at, subscription_next_expires_at FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch();

@@ -12,7 +12,7 @@ function handleAddMember(int $projectId): never
     requireFields($data, ['email']);
 
     $email = normalizeEmail($data['email']);
-    $role  = requireEnumValue($data['role'] ?? 'collaborator', ['admin', 'collaborator'], 'role');
+    $role  = requireEnumValue(canonicalProjectRole((string) ($data['role'] ?? 'collaborator')), ['admin', 'collaborator', 'viewer'], 'role');
 
     if ($role === 'admin' && !currentUserRolesEnabled($uid)) {
         jsonError('Roles are not available on your plan', 403);
@@ -59,7 +59,7 @@ function handleUpdateMemberRole(int $projectId, int $targetUserId): never
     $data = jsonBody();
     requireFields($data, ['role']);
 
-    $newRole = requireEnumValue($data['role'], ['admin', 'collaborator'], 'role');
+    $newRole = requireEnumValue(canonicalProjectRole((string) $data['role']), ['admin', 'collaborator', 'viewer'], 'role');
 
     if (!currentUserRolesEnabled($uid)) {
         jsonError('Roles are not available on your plan', 403);
@@ -130,4 +130,24 @@ function handleRemoveMember(int $projectId, int $targetUserId): never
     logActivity($projectId, $uid, 'member_removed', 'Member removed');
 
     jsonSuccess('Member removed');
+}
+
+function handleLeaveProject(int $projectId): never
+{
+    $uid = requireAuth();
+    $role = requireProjectAccess($projectId, $uid);
+    if ($role === 'owner') {
+        jsonError('Project owner cannot leave before transferring ownership or deleting the project', 422);
+    }
+
+    db()->prepare('DELETE FROM project_members WHERE project_id = ? AND user_id = ?')
+        ->execute([$projectId, $uid]);
+    db()->prepare('
+        DELETE ta FROM task_assignees ta
+        JOIN tasks t ON t.task_id = ta.task_id
+        WHERE t.project_id = ? AND ta.user_id = ?
+    ')->execute([$projectId, $uid]);
+
+    logActivity($projectId, $uid, 'member_left', 'Member left the project');
+    jsonSuccess('Project left');
 }

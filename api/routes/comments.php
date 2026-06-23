@@ -12,7 +12,7 @@ function handleAddComment(int $taskId): never
     $stmt->execute([$taskId]);
     $task = $stmt->fetch();
     if (!$task) jsonError('Task not found', 404);
-    requireProjectAccess((int) $task['project_id'], $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
 
     $data = jsonBody();
     requireFields($data, ['text']);
@@ -62,7 +62,7 @@ function handleEditComment(int $commentId): never
 
     // Only the author or an admin/owner can edit
     $role = requireProjectAccess((int) $comment['project_id'], $uid);
-    if ((int)$comment['user_id'] !== $uid && $role === 'collaborator') {
+    if ((int)$comment['user_id'] !== $uid && !in_array($role, ['owner', 'admin'], true)) {
         jsonError('You can only edit your own comments', 403);
     }
 
@@ -92,7 +92,7 @@ function handleDeleteComment(int $commentId): never
     if (!$comment) jsonError('Comment not found', 404);
 
     $role = requireProjectAccess((int) $comment['project_id'], $uid);
-    if ((int)$comment['user_id'] !== $uid && $role === 'collaborator') {
+    if ((int)$comment['user_id'] !== $uid && !in_array($role, ['owner', 'admin'], true)) {
         jsonError('You can only delete your own comments', 403);
     }
 
@@ -115,7 +115,7 @@ function handlePinComment(int $commentId): never
     $comment = $stmt->fetch();
     if (!$comment) jsonError('Comment not found', 404);
 
-    requireProjectAccess((int) $comment['project_id'], $uid);
+    requireProjectWritable((int) $comment['project_id'], $uid);
 
     $newPinned = $comment['is_pinned'] ? 0 : 1;
     $db->prepare('UPDATE comments SET is_pinned = ? WHERE comment_id = ?')

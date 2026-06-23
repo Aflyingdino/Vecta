@@ -30,6 +30,7 @@ require_once __DIR__ . '/routes/comments.php';
 require_once __DIR__ . '/routes/notes.php';
 require_once __DIR__ . '/routes/members.php';
 require_once __DIR__ . '/routes/invitations.php';
+require_once __DIR__ . '/routes/notifications.php';
 
 /**
  * @param array<string,string> $params
@@ -70,14 +71,24 @@ function defineRoutes(): array
 
         // Members
         route('POST', '/projects/{id}/members', static fn(array $p) => handleAddMember((int) $p['id'])),
+        route('DELETE', '/projects/{id}/members/me', static fn(array $p) => handleLeaveProject((int) $p['id'])),
         route('PATCH', '/projects/{pid}/members/{uid}', static fn(array $p) => handleUpdateMemberRole((int) $p['pid'], (int) $p['uid'])),
         route('DELETE', '/projects/{pid}/members/{uid}', static fn(array $p) => handleRemoveMember((int) $p['pid'], (int) $p['uid'])),
 
         // Invitations
         route('GET', '/invitations', static fn() => handleListInvitations()),
+        route('GET', '/invitations/token/{token}', static fn(array $p) => handleGetInvitationByToken($p['token'])),
         route('POST', '/projects/{id}/invites', static fn(array $p) => handleCreateInvitation((int) $p['id'])),
         route('POST', '/invitations/{id}/accept', static fn(array $p) => handleAcceptInvitation((int) $p['id'])),
+        route('POST', '/invitations/token/{token}/accept', static fn(array $p) => handleAcceptInvitationByToken($p['token'])),
         route('POST', '/invitations/{id}/decline', static fn(array $p) => handleDeclineInvitation((int) $p['id'])),
+        route('DELETE', '/invitations/{id}', static fn(array $p) => handleRevokeInvitation((int) $p['id'])),
+
+        // Notifications
+        route('GET', '/notifications', static fn() => handleListNotifications()),
+        route('PATCH', '/notifications/read', static fn() => handleMarkAllNotificationsRead()),
+        route('PATCH', '/notifications/{id}/read', static fn(array $p) => handleMarkNotificationRead((int) $p['id'])),
+        route('DELETE', '/notifications/{id}', static fn(array $p) => handleArchiveNotification((int) $p['id'])),
 
         // Groups
         route('POST', '/projects/{id}/groups', static fn(array $p) => handleCreateGroup((int) $p['id'])),

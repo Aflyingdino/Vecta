@@ -131,10 +131,12 @@ function repairRequiredSchema(PDO $pdo): void
         ['users', 'subscription_next_starts_at', 'ALTER TABLE users ADD COLUMN subscription_next_starts_at DATETIME DEFAULT NULL AFTER subscription_next_plan'],
         ['users', 'subscription_next_expires_at', 'ALTER TABLE users ADD COLUMN subscription_next_expires_at DATETIME DEFAULT NULL AFTER subscription_next_starts_at'],
         ['tasks', 'archived_at', 'ALTER TABLE tasks ADD COLUMN archived_at DATETIME DEFAULT NULL AFTER created_at'],
+        ['project_invitations', 'token', 'ALTER TABLE project_invitations ADD COLUMN token VARCHAR(64) DEFAULT NULL AFTER invited_email'],
+        ['project_invitations', 'expires_at', 'ALTER TABLE project_invitations ADD COLUMN expires_at DATETIME DEFAULT NULL AFTER status'],
     ];
 
     foreach ($columns as [$table, $column, $statement]) {
-        if (!columnExists($pdo, $table, $column)) {
+        if (tableExists($pdo, $table) && !columnExists($pdo, $table, $column)) {
             echo "REPAIR {$table}.{$column}\n";
             runStatement($pdo, $statement, "repair {$table}.{$column}");
         }
@@ -144,10 +146,11 @@ function repairRequiredSchema(PDO $pdo): void
         ['tasks', 'idx_tasks_project_archived_at', 'CREATE INDEX idx_tasks_project_archived_at ON tasks(project_id, archived_at)'],
         ['tasks', 'idx_tasks_group_archived_at', 'CREATE INDEX idx_tasks_group_archived_at ON tasks(group_id, archived_at)'],
         ['tasks', 'idx_tasks_archived_at', 'CREATE INDEX idx_tasks_archived_at ON tasks(archived_at)'],
+        ['project_invitations', 'idx_project_invitations_token', 'CREATE UNIQUE INDEX idx_project_invitations_token ON project_invitations(token)'],
     ];
 
     foreach ($indexes as [$table, $index, $statement]) {
-        if (!indexExists($pdo, $table, $index)) {
+        if (tableExists($pdo, $table) && !indexExists($pdo, $table, $index)) {
             echo "REPAIR {$table}.{$index}\n";
             runStatement($pdo, $statement, "repair {$table}.{$index}");
         }
@@ -181,19 +184,45 @@ function repairRequiredSchema(PDO $pdo): void
                 invitation_id INT AUTO_INCREMENT PRIMARY KEY,
                 project_id INT NOT NULL,
                 invited_email VARCHAR(150) NOT NULL,
-                role ENUM('admin','collaborator') NOT NULL DEFAULT 'collaborator',
+                token VARCHAR(64) DEFAULT NULL,
+                role ENUM('admin','collaborator','viewer') NOT NULL DEFAULT 'collaborator',
                 invited_by_user_id INT NOT NULL,
                 status ENUM('pending','accepted','declined','cancelled') NOT NULL DEFAULT 'pending',
+                expires_at DATETIME DEFAULT NULL,
                 accepted_by_user_id INT DEFAULT NULL,
                 invited_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 responded_at DATETIME DEFAULT NULL,
                 CONSTRAINT fk_project_invitations_project FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
                 CONSTRAINT fk_project_invitations_inviter FOREIGN KEY (invited_by_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                 CONSTRAINT fk_project_invitations_accepted_by FOREIGN KEY (accepted_by_user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+                UNIQUE INDEX idx_project_invitations_token (token),
                 INDEX idx_project_invitations_email_status (invited_email, status, invited_at),
                 INDEX idx_project_invitations_project_status (project_id, status, invited_at)
             ) ENGINE=InnoDB
         ", 'repair project_invitations');
+    }
+
+    if (!tableExists($pdo, 'notifications')) {
+        echo "REPAIR notifications\n";
+        runStatement($pdo, "
+            CREATE TABLE notifications (
+                notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                project_id INT DEFAULT NULL,
+                task_id INT DEFAULT NULL,
+                type VARCHAR(60) NOT NULL,
+                title VARCHAR(150) NOT NULL,
+                body TEXT,
+                read_at DATETIME DEFAULT NULL,
+                archived_at DATETIME DEFAULT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                CONSTRAINT fk_notifications_project FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+                CONSTRAINT fk_notifications_task FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE SET NULL,
+                INDEX idx_notifications_user_read_created (user_id, read_at, created_at),
+                INDEX idx_notifications_project_created (project_id, created_at)
+            ) ENGINE=InnoDB
+        ", 'repair notifications');
     }
 }
 
