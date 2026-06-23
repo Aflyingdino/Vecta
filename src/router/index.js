@@ -7,6 +7,7 @@ const AboutPage      = () => import('@/pages/AboutPage.vue')
 const ContactPage    = () => import('@/pages/ContactPage.vue')
 const LoginPage      = () => import('@/pages/LoginPage.vue')
 const RegisterPage   = () => import('@/pages/RegisterPage.vue')
+const InvitePage     = () => import('@/pages/InvitePage.vue')
 const ProjectsPage   = () => import('@/pages/ProjectsPage.vue')
 const BoardPage      = () => import('@/pages/BoardPage.vue')
 const DashboardPage  = () => import('@/pages/DashboardPage.vue')
@@ -23,6 +24,7 @@ const routes = [
   { path: '/contact',  name: 'contact',  component: ContactPage },
   { path: '/login',    name: 'login',    component: LoginPage },
   { path: '/register', name: 'register', component: RegisterPage },
+  { path: '/invite/:token', name: 'invite', component: InvitePage, meta: { requiresAuth: true } },
   /* ── Authenticated (wrapped in AppLayout) ── */
   {
     path: '/projects',

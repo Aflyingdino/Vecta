@@ -1,6 +1,7 @@
 import { reactive, computed } from 'vue'
 import { projects } from './projectStore'
 import { readJson, writeJson } from '@/utils/safeStorage'
+import { api } from '@/utils/api'
 
 /* ─────────────────────────────────────────────
    Notification Store
@@ -49,6 +50,19 @@ export const mutedGroupIds   = computed(() => _state.mutedGroupIds)
 export const mutedTaskIds    = computed(() => _state.mutedTaskIds)
 export const mutedLabelIds   = computed(() => _state.mutedLabelIds)
 
+export async function fetchNotifications() {
+  try {
+    const data = await api.get('/notifications')
+    _state.notifications = data
+  } catch (err) {
+    console.warn('Notification sync failed:', err)
+  }
+}
+
+export async function refreshNotifications() {
+  return fetchNotifications()
+}
+
 /* ── Add notification ── */
 export function addNotification({ type, title, body, taskId = null, projectId = null, groupId = null, labelId = null }) {
   // Check mutes
@@ -78,15 +92,18 @@ export function addNotification({ type, title, body, taskId = null, projectId = 
 export function markRead(id) {
   const n = _state.notifications.find(n => n.id === id)
   if (n) n.read = true
+  api.patch(`/notifications/${id}/read`, {}).catch(() => {})
 }
 export function markAllRead() {
   _state.notifications.forEach(n => { n.read = true })
+  api.patch('/notifications/read', {}).catch(() => {})
 }
 
 /* ── Archive ── */
 export function archiveNotification(id) {
   const n = _state.notifications.find(n => n.id === id)
   if (n) n.archived = true
+  api.delete(`/notifications/${id}`).catch(() => {})
 }
 export function archiveMany(ids) {
   for (const id of ids) archiveNotification(id)

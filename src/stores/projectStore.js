@@ -125,6 +125,13 @@ export async function inviteMember(projectId, email, role = 'collaborator') {
   return invitation
 }
 
+export async function leaveProject(projectId) {
+  await api.delete(`/projects/${projectId}/members/me`)
+  const idx = _state.projects.findIndex(p => p.id === projectId)
+  if (idx !== -1) _state.projects.splice(idx, 1)
+  if (_state.activeProjectId === projectId) _state.activeProjectId = null
+}
+
 export async function removeMember(projectId, memberId) {
   await api.delete(`/projects/${projectId}/members/${memberId}`)
   const p = _state.projects.find(p => p.id === projectId)

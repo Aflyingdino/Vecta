@@ -5,6 +5,7 @@ import { applyTheme } from '@/stores/uiStore'
 import { isLoggedIn } from '@/stores/authStore'
 import { refreshProjects } from '@/stores/projectStore'
 import { refreshInvitations } from '@/stores/invitationStore'
+import { refreshNotifications } from '@/stores/notificationStore'
 
 const route = useRoute()
 
@@ -16,6 +17,7 @@ async function syncProjects() {
   await Promise.all([
     refreshProjects(),
     refreshInvitations(),
+    refreshNotifications(),
   ])
 }
 

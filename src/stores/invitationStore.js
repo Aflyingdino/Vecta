@@ -72,3 +72,19 @@ export async function declineInvitation(invitationId) {
     _state.loading = false
   }
 }
+
+export async function fetchInvitationByToken(token) {
+  return api.get(`/invitations/token/${encodeURIComponent(token)}`)
+}
+
+export async function acceptInvitationByToken(token) {
+  const data = await api.post(`/invitations/token/${encodeURIComponent(token)}/accept`)
+  await refreshProjects()
+  await refreshInvitations()
+  return data
+}
+
+export async function revokeInvitation(invitationId) {
+  await api.delete(`/invitations/${invitationId}`)
+  removeInvitation(invitationId)
+}

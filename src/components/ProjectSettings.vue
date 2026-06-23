@@ -4,6 +4,7 @@ import { ui, closeSettings, toggleTheme } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
 import { activeProject, inviteMember, removeMember, updateMemberRole } from '@/stores/projectStore'
+import { revokeInvitation } from '@/stores/invitationStore'
 import ColorPicker from './ColorPicker.vue'
 import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
 import { user } from '@/stores/authStore'
@@ -42,21 +43,45 @@ function saveEdit() {
 const memberEmail = ref('')
 const memberRole  = ref('collaborator')
 const memberError = ref('')
+const memberSuccess = ref('')
 const rolesEnabled = computed(() => canUseRoles(user.subscriptionPlan))
 
 async function sendInvitation() {
   memberError.value = ''
+  memberSuccess.value = ''
   const email = memberEmail.value.trim().toLowerCase()
   if (!email || !email.includes('@')) { memberError.value = 'Voer een geldig e-mailadres in.'; return }
   const p = activeProject.value
   if (!p) return
   try {
-    await inviteMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
+    const invitation = await inviteMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
+    if (!p.pendingInvitations) p.pendingInvitations = []
+    const existingIdx = p.pendingInvitations.findIndex((item) => item.id === invitation.id)
+    if (existingIdx >= 0) p.pendingInvitations[existingIdx] = invitation
+    else p.pendingInvitations.unshift(invitation)
+    memberSuccess.value = invitation.inviteUrl ? `Uitnodigingslink aangemaakt: ${invitation.inviteUrl}` : 'Uitnodiging verstuurd.'
     memberEmail.value = ''
     memberRole.value  = 'collaborator'
   } catch (err) {
     memberError.value = err.message
   }
+}
+
+async function copyInviteLink(invite) {
+  if (!invite.inviteUrl) return
+  try {
+    await navigator.clipboard.writeText(invite.inviteUrl)
+    memberSuccess.value = 'Uitnodigingslink gekopieerd.'
+  } catch {
+    memberSuccess.value = invite.inviteUrl
+  }
+}
+
+async function cancelInvitation(inviteId) {
+  const p = activeProject.value
+  if (!p) return
+  await revokeInvitation(inviteId)
+  p.pendingInvitations = (p.pendingInvitations || []).filter((invite) => invite.id !== inviteId)
 }
 
 async function changeRole(memberId, role) {
@@ -73,6 +98,7 @@ const ROLES = [
   { value: 'owner', label: 'Eigenaar' },
   { value: 'admin', label: 'Admin' },
   { value: 'collaborator',  label: 'Lid' },
+  { value: 'viewer',  label: 'Viewer' },
 ]
 
 const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.value.has(activeProject.value.id))
@@ -218,12 +244,33 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                   <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
                     <option value="admin">Admin</option>
                     <option value="collaborator">Lid</option>
+                    <option value="viewer">Viewer</option>
                   </select>
                   <button class="btn-add" @click="sendInvitation">{{ t('invite') }}</button>
                 </div>
                 <p v-if="!rolesEnabled" class="member-note">{{ t('rolesAvailablePremium') }}</p>
                 <p class="member-note">{{ t('invitationInboxHint') }}</p>
+                <p v-if="memberSuccess" class="member-success">{{ memberSuccess }}</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>
+              </div>
+
+              <div v-if="activeProject?.pendingInvitations?.length" class="add-label-form">
+                <p class="section-label">Openstaande uitnodigingen</p>
+                <div class="label-list">
+                  <div v-for="invite in activeProject.pendingInvitations" :key="invite.id" class="member-row">
+                    <div class="member-avatar">{{ invite.email[0].toUpperCase() }}</div>
+                    <div class="member-info">
+                      <span class="member-name">{{ invite.email }}</span>
+                      <span class="member-email">{{ invite.role }} · verloopt {{ invite.expiresAt ? new Date(invite.expiresAt).toLocaleDateString('nl-NL') : 'binnenkort' }}</span>
+                    </div>
+                    <button class="label-action-btn" @click="copyInviteLink(invite)">Link</button>
+                    <button class="icon-btn icon-btn--danger" @click="cancelInvitation(invite.id)" title="Uitnodiging intrekken">
+                      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Members list -->
@@ -255,6 +302,7 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                     <option value="owner" :disabled="m.role !== 'owner'">Eigenaar</option>
                     <option value="admin">Admin</option>
                     <option value="collaborator">Lid</option>
+                    <option value="viewer">Viewer</option>
                   </select>
                   <button
                     v-if="m.role !== 'owner'"
@@ -503,6 +551,9 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 11px;
   color: var(--color-text-3);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .member-plan {
   display: inline-flex;
   width: fit-content;
@@ -521,13 +572,16 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
   font-size: 12px;
   color: var(--color-text-3);
 }
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .member-error {
   margin-top: 8px;
   font-size: 12px;
   color: var(--color-danger);
+}
+.member-success {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #46a758;
+  overflow-wrap: anywhere;
 }
 
 .members-actions-row {

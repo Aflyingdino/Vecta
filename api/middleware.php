@@ -79,13 +79,53 @@ function requireProjectAccess(int $projectId, int $userId): string
     return $role;
 }
 
+function canonicalProjectRole(string $role): string
+{
+    return $role === 'member' ? 'collaborator' : $role;
+}
+
+function roleLabel(string $role): string
+{
+    return match (canonicalProjectRole($role)) {
+        'owner' => 'OWNER',
+        'admin' => 'ADMIN',
+        'viewer' => 'VIEWER',
+        default => 'MEMBER',
+    };
+}
+
+function projectRoleRank(string $role): int
+{
+    return match (canonicalProjectRole($role)) {
+        'owner' => 40,
+        'admin' => 30,
+        'collaborator' => 20,
+        'viewer' => 10,
+        default => 0,
+    };
+}
+
+function requireProjectRoleAtLeast(int $projectId, int $userId, string $minimumRole): string
+{
+    $role = requireProjectAccess($projectId, $userId);
+    if (projectRoleRank($role) < projectRoleRank($minimumRole)) {
+        jsonError('Insufficient permissions', 403);
+    }
+    return $role;
+}
+
+function requireProjectWritable(int $projectId, int $userId): string
+{
+    return requireProjectRoleAtLeast($projectId, $userId, 'collaborator');
+}
+
 /**
  * Require owner or admin role. Returns role string.
  */
 function requireProjectAdmin(int $projectId, int $userId): string
 {
     $role = requireProjectAccess($projectId, $userId);
-    if ($role === 'collaborator') {
+    if (!in_array($role, ['owner', 'admin'], true)) {
         jsonError('Insufficient permissions — admin or owner required', 403);
     }
     return $role;
@@ -111,4 +151,13 @@ function logActivity(int $projectId, ?int $userId, string $type, string $message
         'INSERT INTO activity_log (project_id, user_id, type, message) VALUES (?, ?, ?, ?)'
     );
     $stmt->execute([$projectId, $userId, $type, $message]);
+}
+
+function createNotification(int $userId, string $type, string $title, ?string $body = null, ?int $projectId = null, ?int $taskId = null): void
+{
+    ensureRuntimeSchema();
+    db()->prepare('
+        INSERT INTO notifications (user_id, project_id, task_id, type, title, body)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ')->execute([$userId, $projectId, $taskId, $type, $title, $body]);
 }

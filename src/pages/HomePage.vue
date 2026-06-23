@@ -1,56 +1,21 @@
 <script setup>
 import PublicNav from '@/components/PublicNav.vue'
-import { t } from '@/utils/i18n'
+
+const logos = ['NovaOps', 'Aster Studio', 'Northline', 'Peak Digital', 'Atlas Labs']
 
 const features = [
-  {
-    title: 'Kanban-borden',
-    desc: 'Organiseer taken in groepen met slepen tussen kolommen.',
-    icon: 'board',
-  },
-  {
-    title: 'Labels en prioriteiten',
-    desc: 'Label taken met eigen kleuren en vier prioriteitsniveaus.',
-    icon: 'label',
-  },
-  {
-    title: 'Deadlines en agenda',
-    desc: 'Stel deadlines in en bekijk alle taken in een maandweergave.',
-    icon: 'calendar',
-  },
-  {
-    title: 'Reacties',
-    desc: 'Bespreek taken direct met je team in de taakdetails.',
-    icon: 'comment',
-  },
-  {
-    title: 'Openbare deellinks',
-    desc: 'Deel een alleen-lezen weergave van elk bord met een link.',
-    icon: 'share',
-  },
-  {
-    title: 'Teamrollen',
-    desc: 'Nodig leden uit als Eigenaar, Admin of Lid met rechten per rol.',
-    icon: 'team',
-  },
+  ['Project boards', 'Plan, assign and ship work from one focused board.'],
+  ['Team permissions', 'Owner, admin, member and viewer access enforced in the API.'],
+  ['Calendar planning', 'Turn deadlines and scheduled tasks into a shared planning view.'],
+  ['Activity history', 'Every important project action lands in the activity feed.'],
+  ['Invitation links', 'Invite by email or copy a secure expiring project invite link.'],
+  ['In-app notifications', 'Keep assignment, invite and comment updates visible.'],
 ]
 
-const steps = [
-  {
-    n: '01',
-    title: 'Maak een project',
-    desc: 'Zet een project op, maak bordgroepen en nodig je team uit met de juiste rollen.',
-  },
-  {
-    n: '02',
-    title: 'Bouw je bord',
-    desc: 'Voeg taken toe, ken labels toe, stel prioriteiten en deadlines in, en verplaats kaarten tussen groepen.',
-  },
-  {
-    n: '03',
-    title: 'Volg en deel',
-    desc: 'Volg deadlines in de agenda en maak een publieke alleen-lezen link voor kijktoegang zonder account.',
-  },
+const faqs = [
+  ['Can I invite external collaborators?', 'Yes. Invite by email and share a secure invitation link that expires automatically.'],
+  ['Are viewer roles read-only?', 'Yes. Viewers can inspect project work but write actions are blocked in the backend.'],
+  ['Does Vecta support teams?', 'Projects have members, roles, pending invitations and activity tracking.'],
 ]
 </script>
 
@@ -58,237 +23,488 @@ const steps = [
   <div class="home">
     <PublicNav />
 
-    <!-- Hero -->
     <section class="hero">
-      <h1 class="hero__title">{{ t('heroTitle') }}</h1>
-      <p class="hero__subtitle">{{ t('heroSubtitle') }}</p>
-      <div class="hero__cta">
-        <router-link to="/register" class="btn btn-primary btn-lg">{{ t('getStarted') }}</router-link>
-        <router-link to="/about" class="btn btn-ghost btn-lg">{{ t('moreInfo') }}</router-link>
+      <div class="hero-copy">
+        <p class="eyebrow">Modern project operations</p>
+        <h1>Run every project from one calm, collaborative workspace.</h1>
+        <p class="hero-text">
+          Vecta brings boards, calendars, task context, roles, invitations and team activity into a focused SaaS workspace built for real delivery.
+        </p>
+        <div class="hero-actions">
+          <router-link to="/register" class="btn btn-primary">Start free</router-link>
+          <router-link to="/login" class="btn btn-secondary">Open workspace</router-link>
+        </div>
       </div>
-    </section>
 
-    <!-- Features -->
-    <section class="features">
-      <div class="features__inner">
-        <div class="section-label">{{ t('features') }}</div>
-        <h2 class="section-title">{{ t('featuresTitle') }}</h2>
-        <div class="features__grid">
-          <div class="feature-card" v-for="f in features" :key="f.title">
-            <div class="feature-icon">
-              <svg v-if="f.icon === 'board'" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="5" height="14" rx="1.5"/><rect x="10" y="3" width="5" height="10" rx="1.5"/><rect x="17" y="3" width="5" height="17" rx="1.5"/></svg>
-              <svg v-else-if="f.icon === 'label'" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
-              <svg v-else-if="f.icon === 'calendar'" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
-              <svg v-else-if="f.icon === 'comment'" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-              <svg v-else-if="f.icon === 'share'" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-              <svg v-else width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <div class="product-preview" aria-label="Vecta dashboard preview">
+        <div class="preview-topbar">
+          <span></span><span></span><span></span>
+          <strong>Vecta Sprint Board</strong>
+        </div>
+        <div class="preview-body">
+          <aside class="preview-sidebar">
+            <b>Projects</b>
+            <span class="active">Website Launch</span>
+            <span>Mobile App</span>
+            <span>Client Portal</span>
+          </aside>
+          <div class="preview-board">
+            <div class="preview-col">
+              <strong>Planned</strong>
+              <article><b>Invite design partner</b><small>Admin review</small></article>
+              <article><b>Create pricing page</b><small>Due Friday</small></article>
             </div>
-            <div class="feature-body">
-              <h3>{{ f.title }}</h3>
-              <p>{{ f.desc }}</p>
+            <div class="preview-col">
+              <strong>In progress</strong>
+              <article><b>Calendar QA</b><small>Assigned to Eva</small></article>
+              <article><b>API permissions</b><small>High priority</small></article>
+            </div>
+            <div class="preview-col">
+              <strong>Done</strong>
+              <article><b>Invitation links</b><small>Shipped</small></article>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- How it works -->
-    <section class="how">
-      <div class="how__inner">
-        <div class="section-label">Zo werkt het</div>
-        <h2 class="section-title">Binnen enkele minuten gestart</h2>
-        <div class="how__steps">
-          <div class="step" v-for="s in steps" :key="s.n">
-            <span class="step__n">{{ s.n }}</span>
-            <div class="step__body">
-              <h3>{{ s.title }}</h3>
-              <p>{{ s.desc }}</p>
-            </div>
-          </div>
-        </div>
+    <section class="trusted">
+      <span>Trusted by focused product teams</span>
+      <div>
+        <strong v-for="logo in logos" :key="logo">{{ logo }}</strong>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="home-footer">
-      <p>2026 Vecta &nbsp;&middot;&nbsp; <router-link to="/about">Over ons</router-link> &nbsp;&middot;&nbsp; <router-link to="/contact">Contact</router-link></p>
+    <section class="section">
+      <div class="section-head">
+        <p class="eyebrow">Platform</p>
+        <h2>Everything connected to the work graph.</h2>
+      </div>
+      <div class="feature-grid">
+        <article v-for="[title, body] in features" :key="title" class="feature-card">
+          <h3>{{ title }}</h3>
+          <p>{{ body }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div>
+        <p class="eyebrow">Collaboration</p>
+        <h2>Invite, manage and protect project access.</h2>
+        <p>Send email invitations, copy expiring invite links, revoke pending invites, remove members and keep viewers read-only.</p>
+      </div>
+      <div class="access-table">
+        <span>Owner</span><b>Full control</b>
+        <span>Admin</span><b>Board and member management</b>
+        <span>Member</span><b>Task and comment contribution</b>
+        <span>Viewer</span><b>Read-only workspace access</b>
+      </div>
+    </section>
+
+    <section class="showcase showcase-alt">
+      <div class="metric-row">
+        <article><b>24h</b><span>deadline focus</span></article>
+        <article><b>100</b><span>recent activities</span></article>
+        <article><b>14d</b><span>invite expiry</span></article>
+      </div>
+      <div>
+        <p class="eyebrow">Dashboard</p>
+        <h2>Know what needs attention before the team asks.</h2>
+        <p>Recent tasks, overdue work, invitations, activity and planning signals live together in the dashboard.</p>
+      </div>
+    </section>
+
+    <section class="pricing">
+      <div>
+        <p class="eyebrow">Pricing preview</p>
+        <h2>Start lean, scale when roles and planning matter.</h2>
+      </div>
+      <div class="pricing-grid">
+        <article><h3>Free</h3><p>One project for small teams validating their workflow.</p></article>
+        <article><h3>Premium+</h3><p>Role-based collaboration, larger boards and team controls.</p></article>
+        <article><h3>Enterprise</h3><p>Unlimited workspace capacity for serious delivery teams.</p></article>
+      </div>
+    </section>
+
+    <section class="testimonials">
+      <blockquote>
+        "Vecta feels like the project room we wanted: quiet, fast and connected enough for the whole team."
+      </blockquote>
+      <span>Product lead, Atlas Labs</span>
+    </section>
+
+    <section class="faq">
+      <div class="section-head">
+        <p class="eyebrow">FAQ</p>
+        <h2>Built for real collaboration.</h2>
+      </div>
+      <details v-for="[question, answer] in faqs" :key="question">
+        <summary>{{ question }}</summary>
+        <p>{{ answer }}</p>
+      </details>
+    </section>
+
+    <section class="final-cta">
+      <h2>Bring the team into one workspace.</h2>
+      <router-link to="/register" class="btn btn-primary">Create your workspace</router-link>
+    </section>
+
+    <footer class="footer">
+      <b>Vecta</b>
+      <nav>
+        <router-link to="/about">About</router-link>
+        <router-link to="/contact">Contact</router-link>
+        <router-link to="/login">Login</router-link>
+      </nav>
     </footer>
   </div>
 </template>
 
-
-
 <style scoped>
 .home {
   min-height: 100vh;
-  background: var(--color-surface-0);
-  color: var(--color-text-1);
-  display: flex;
-  flex-direction: column;
+  background: #0d0f14;
+  color: #f7f8fb;
 }
-
-/* Shared */
-.section-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+  gap: 48px;
+  align-items: center;
+  min-height: 760px;
+  padding: 72px clamp(20px, 5vw, 72px) 56px;
+  background: #0d0f14;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.hero-copy {
+  max-width: 640px;
+}
+.eyebrow {
+  margin-bottom: 14px;
+  color: #75c7b7;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-accent);
-  margin-bottom: 10px;
 }
-.section-title {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-text-1);
-  margin-bottom: 32px;
+h1, h2, h3, p {
+  margin: 0;
 }
-
-/* Buttons */
+h1 {
+  font-size: clamp(42px, 6vw, 76px);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+.hero-text {
+  max-width: 560px;
+  margin-top: 22px;
+  color: #b6bdca;
+  font-size: 18px;
+  line-height: 1.7;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
   text-decoration: none;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .btn-primary {
-  background: var(--color-accent);
-  color: #fff;
-  border-color: var(--color-accent);
+  background: #f7f8fb;
+  color: #101217;
 }
-.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
-.btn-ghost {
-  background: transparent;
-  color: var(--color-text-2);
-  border-color: var(--color-border);
+.btn-secondary {
+  color: #f7f8fb;
+  border: 1px solid rgba(255,255,255,0.18);
 }
-.btn-ghost:hover { background: var(--color-surface-2); color: var(--color-text-1); }
-.btn-lg { padding: 11px 24px; font-size: 14px; border-radius: 8px; }
-
-/* Hero */
-.hero {
+.product-preview {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  background: #151821;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+}
+.preview-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  background: #10131a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #8991a3;
+}
+.preview-topbar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #42495a;
+}
+.preview-topbar strong {
+  margin-left: 10px;
+  font-size: 12px;
+}
+.preview-body {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  min-height: 420px;
+}
+.preview-sidebar {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 108px 48px 96px;
-  gap: 20px;
-  border-bottom: 1px solid var(--color-border-sub);
-}
-.hero__title {
-  font-size: clamp(32px, 4.5vw, 58px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  color: var(--color-text-1);
-  max-width: 620px;
-}
-.hero__subtitle {
-  font-size: 17px;
-  color: var(--color-text-2);
-  max-width: 480px;
-  line-height: 1.75;
-}
-.hero__cta {
-  display: flex;
   gap: 10px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+  padding: 18px;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  color: #8991a3;
+  font-size: 13px;
 }
-
-/* Features */
-.features {
-  border-bottom: 1px solid var(--color-border-sub);
-  padding: 72px 48px;
+.preview-sidebar b {
+  color: #f7f8fb;
+  margin-bottom: 8px;
 }
-.features__inner {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-.features__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--color-border);
-}
-.feature-card {
-  background: var(--color-surface-1);
-  padding: 22px;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  transition: background 0.15s;
-}
-.feature-card:hover { background: var(--color-surface-2); }
-.feature-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+.preview-sidebar span {
+  padding: 8px 10px;
   border-radius: 7px;
-  background: var(--color-surface-3);
-  border: 1px solid var(--color-border);
-  color: var(--color-accent);
+}
+.preview-sidebar .active {
+  color: #f7f8fb;
+  background: #232837;
+}
+.preview-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+.preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.preview-col > strong {
+  color: #8991a3;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.preview-col article {
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: #1b202b;
+}
+.preview-col b,
+.preview-col small {
+  display: block;
+}
+.preview-col b {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.preview-col small {
+  color: #8991a3;
+}
+.trusted,
+.section,
+.showcase,
+.pricing,
+.testimonials,
+.faq,
+.final-cta,
+.footer {
+  padding: 64px clamp(20px, 5vw, 72px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.trusted {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 24px;
+  color: #8991a3;
 }
-.feature-body h3 { font-size: 13px; font-weight: 600; color: var(--color-text-1); margin-bottom: 4px; }
-.feature-body p { font-size: 12px; color: var(--color-text-2); line-height: 1.65; }
-
-/* How it works */
-.how {
-  border-bottom: 1px solid var(--color-border-sub);
-  padding: 72px 48px;
+.trusted div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
 }
-.how__inner {
-  max-width: 1000px;
-  margin: 0 auto;
+.trusted strong {
+  color: #d7dbe5;
+  font-size: 13px;
 }
-.how__steps {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+.section-head {
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+h2 {
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+.feature-grid,
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.feature-card,
+.pricing-grid article {
+  min-height: 160px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: #151821;
+}
+.feature-card h3,
+.pricing-grid h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.feature-card p,
+.showcase p,
+.pricing-grid p,
+.faq p {
+  color: #a9b1c0;
+  line-height: 1.65;
+}
+.showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1fr);
+  gap: 36px;
+  align-items: center;
+}
+.showcase-alt {
+  grid-template-columns: minmax(360px, 1fr) minmax(0, 0.9fr);
+}
+.access-table {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
   overflow: hidden;
 }
-.step {
+.access-table span,
+.access-table b {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.access-table span {
+  color: #75c7b7;
+  background: #121720;
+}
+.access-table b {
+  font-size: 14px;
+}
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.metric-row article {
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: #151821;
+}
+.metric-row b {
+  display: block;
+  font-size: 34px;
+}
+.metric-row span {
+  color: #8991a3;
+  font-size: 13px;
+}
+.testimonials {
+  background: #f5f1e8;
+  color: #171717;
+}
+blockquote {
+  max-width: 820px;
+  margin: 0 0 16px;
+  font-size: clamp(26px, 4vw, 44px);
+  line-height: 1.18;
+}
+.testimonials span {
+  color: #5f5a50;
+}
+.faq details {
+  max-width: 900px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.faq summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+.faq p {
+  margin-top: 10px;
+}
+.final-cta {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 24px;
-  padding: 26px 28px;
-  background: var(--color-surface-1);
-  border-bottom: 1px solid var(--color-border);
 }
-.step:last-child { border-bottom: none; }
-.step__n {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--color-accent);
-  min-width: 24px;
-  margin-top: 2px;
-  font-variant-numeric: tabular-nums;
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: #8991a3;
 }
-.step__body h3 { font-size: 14px; font-weight: 600; color: var(--color-text-1); margin-bottom: 4px; }
-.step__body p { font-size: 13px; color: var(--color-text-2); line-height: 1.65; }
-
-/* Footer */
-.home-footer {
-  padding: 28px 48px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--color-text-3);
-  margin-top: auto;
+.footer nav {
+  display: flex;
+  gap: 16px;
 }
-.home-footer a { color: var(--color-text-2); text-decoration: none; }
-.home-footer a:hover { color: var(--color-text-1); }
+.footer a {
+  color: #d7dbe5;
+  text-decoration: none;
+}
+@media (max-width: 980px) {
+  .hero,
+  .showcase,
+  .showcase-alt {
+    grid-template-columns: 1fr;
+  }
+  .preview-body {
+    grid-template-columns: 1fr;
+  }
+  .preview-sidebar {
+    display: none;
+  }
+  .feature-grid,
+  .pricing-grid,
+  .metric-row {
+    grid-template-columns: 1fr;
+  }
+  .trusted,
+  .final-cta,
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 640px) {
+  .hero {
+    min-height: auto;
+    padding-top: 48px;
+  }
+  .product-preview {
+    border-radius: 10px;
+  }
+  .preview-board {
+    grid-template-columns: 1fr;
+  }
+  .access-table {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

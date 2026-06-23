@@ -36,6 +36,7 @@ function fetchProjectSummaries(int $userId): array
 
 function fetchFullProject(int $projectId, string $role): array
 {
+    ensureRuntimeSchema();
     $db = db();
 
     // Project base
@@ -68,6 +69,25 @@ function fetchFullProject(int $projectId, string $role): array
         'id'    => (int) $r['label_id'],
         'name'  => $r['name'],
         'color' => $r['color'],
+    ], $stmt->fetchAll());
+
+    // Pending invitations
+    $stmt = $db->prepare("
+        SELECT i.invitation_id, i.project_id, i.invited_email, i.token, i.role, i.status, i.expires_at, i.invited_at, i.responded_at,
+               u.name AS inviter_name,
+               p.title AS project_title, p.description AS project_description, p.main_color AS project_color, p.archived_at AS project_archived_at
+        FROM project_invitations i
+        JOIN users u ON u.user_id = i.invited_by_user_id
+        JOIN projects p ON p.project_id = i.project_id
+        WHERE i.project_id = ? AND i.status = 'pending'
+        ORDER BY i.invited_at DESC
+    ");
+    $stmt->execute([$projectId]);
+    $pendingInvitations = array_map(fn($r) => function_exists('formatInvitationRow') ? formatInvitationRow($r) : [
+        'id' => (int) $r['invitation_id'],
+        'email' => $r['invited_email'],
+        'role' => $r['role'],
+        'status' => $r['status'],
     ], $stmt->fetchAll());
 
     // Groups (including archived)
@@ -267,6 +287,7 @@ function fetchFullProject(int $projectId, string $role): array
         'archivedGroups' => $archivedGroups,
         'backlog'        => $backlog,
         'labels'         => $labels,
+        'pendingInvitations' => $pendingInvitations,
         'completedTasks' => array_values($completedTasks),
         'activity'       => $activity,
         'createdAt'      => $proj['created_at'],
@@ -277,6 +298,7 @@ function fetchFullProject(int $projectId, string $role): array
 
 function handleListProjects(): never
 {
+    ensureRuntimeSchema();
     $uid = requireAuth();
 
     // Return full data for all projects (needed by dashboard/calendar)
@@ -301,6 +323,7 @@ function handleGetProject(int $id): never
 
 function handleCreateProject(): never
 {
+    ensureRuntimeSchema();
     $uid  = requireAuth();
     $data = jsonBody();
     requireFields($data, ['name']);
