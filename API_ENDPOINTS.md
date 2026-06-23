@@ -152,6 +152,45 @@ Base path: `/api`
   - Also removes that user from task assignees, comments, and notes in that project.
 - Response: `200` with success message.
 
+## Invitations
+
+### GET /invitations
+- Purpose: Returns pending project invitations for the current user's email address.
+- Auth: Logged-in user.
+- Response: `200` with an array of invitation objects.
+- Common errors: `401` not authenticated.
+
+### POST /projects/{id}/invites
+- Purpose: Creates or refreshes a pending project invitation by email.
+- Auth: Project `admin` or `owner`.
+- Body:
+  - `email` (required)
+  - `role` (optional: `admin` or `collaborator`, defaults to `collaborator`)
+- Behavior:
+  - Cannot invite yourself.
+  - Cannot invite an existing project member.
+  - Only `owner` can invite admins, and admin invitations require a plan with roles enabled.
+  - Reuses an existing pending invitation for the same project/email.
+- Response: `201` with created invitation, or `200` when an existing pending invitation was refreshed.
+- Common errors: `403` insufficient permissions, `409` already a member, `422` validation failure.
+
+### POST /invitations/{id}/accept
+- Purpose: Accepts a pending project invitation for the current user's email address.
+- Auth: Logged-in user.
+- Behavior:
+  - Adds the user as a project member, or updates their non-owner role if already present.
+  - Marks the invitation as accepted.
+- Response: `200` with `{ invitationId, projectId, status }`.
+- Common errors: `403` invitation belongs to another account, `404` invitation not found, `409` no longer pending.
+
+### POST /invitations/{id}/decline
+- Purpose: Declines a pending project invitation for the current user's email address.
+- Auth: Logged-in user.
+- Behavior:
+  - Marks the invitation as declined.
+- Response: `200` with `{ invitationId, projectId, status }`.
+- Common errors: `403` invitation belongs to another account, `404` invitation not found, `409` no longer pending.
+
 ## Groups
 
 ### POST /projects/{id}/groups
