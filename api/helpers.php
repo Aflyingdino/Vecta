@@ -212,6 +212,36 @@ function requireJsonRequest(): void
     }
 }
 
+function requestHasBody(): bool
+{
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $transferEncoding = strtolower((string) ($_SERVER['HTTP_TRANSFER_ENCODING'] ?? ''));
+    return $contentLength > 0 || $transferEncoding !== '';
+}
+
+function appBaseUrl(): string
+{
+    $origin = rtrim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''), '/');
+    $allowedOrigins = array_filter(array_map('trim', explode(',', ALLOWED_ORIGINS)));
+
+    if ($origin !== '' && (APP_ENV !== 'production' || in_array($origin, $allowedOrigins, true))) {
+        return $origin;
+    }
+
+    $host = (string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '');
+    if ($host !== '') {
+        $proto = (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+        if ($proto === '') {
+            $proto = isHttpsRequest() ? 'https' : 'http';
+        }
+        $proto = strtolower(explode(',', $proto)[0] ?? $proto);
+        $host = trim(explode(',', $host)[0] ?? $host);
+        return $proto . '://' . $host;
+    }
+
+    return rtrim(APP_URL, '/');
+}
+
 function requireFields(array $data, array $fields): void
 {
     foreach ($fields as $f) {

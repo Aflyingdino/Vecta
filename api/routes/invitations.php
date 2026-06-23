@@ -59,7 +59,7 @@ function formatInvitationRow(array $row): array
         'projectColor' => $row['project_color'] ?? '#5b5bd6',
         'email' => normalizeEmail($row['invited_email']),
         'token' => $row['token'] ?? null,
-        'inviteUrl' => !empty($row['token']) ? rtrim(APP_URL, '/') . '/invite/' . $row['token'] : null,
+        'inviteUrl' => !empty($row['token']) ? appBaseUrl() . '/invite/' . $row['token'] : null,
         'role' => $row['role'],
         'invitedBy' => $row['inviter_name'],
         'status' => $row['status'],

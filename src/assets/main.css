@@ -62,6 +62,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-0);
   color: var(--color-text-1);
+  cursor: default;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+textarea,
+[contenteditable='true'] {
+  cursor: text;
+  caret-color: var(--color-text-1);
+}
+
+input,
+textarea,
+select {
+  color: var(--color-text-1);
 }
 
 /* ── Smooth scroll ── */

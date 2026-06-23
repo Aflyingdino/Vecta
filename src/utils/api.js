@@ -67,19 +67,25 @@ async function fetchCsrfToken(forceRefresh = false) {
 async function request(path, options = {}, allowRetry = true) {
   const method = (options.method || 'GET').toUpperCase()
   const headers = { Accept: 'application/json', ...options.headers }
+  const needsJsonBody = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+  const requestOptions = { ...options }
 
-  if (options.body !== undefined) {
+  if (needsJsonBody && requestOptions.body === undefined) {
+    requestOptions.body = '{}'
+  }
+
+  if (requestOptions.body !== undefined) {
     headers['Content-Type'] = 'application/json'
   }
 
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  if (needsJsonBody) {
     headers[CSRF_HEADER] = await fetchCsrfToken()
   }
 
   const res = await fetch(buildUrl(path), {
     headers,
     credentials: 'include',
-    ...options,
+    ...requestOptions,
   })
 
   if (!useFallbackRouting && res.status === 404) {
@@ -110,7 +116,7 @@ async function request(path, options = {}, allowRetry = true) {
 export const api = {
   initSecurity: () => fetchCsrfToken(),
   get:    (path) => request(path),
-  post:   (path, body) => request(path, { method: 'POST',   body: JSON.stringify(body) }),
-  patch:  (path, body) => request(path, { method: 'PATCH',  body: JSON.stringify(body) }),
+  post:   (path, body = {}) => request(path, { method: 'POST',   body: JSON.stringify(body) }),
+  patch:  (path, body = {}) => request(path, { method: 'PATCH',  body: JSON.stringify(body) }),
   delete: (path) => request(path, { method: 'DELETE' }),
 }

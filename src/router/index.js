@@ -89,4 +89,19 @@ router.beforeEach((to, from) => {
   }
 })
 
+router.onError((error) => {
+  const message = String(error?.message || error || '')
+  const isStaleChunk = /Failed to fetch dynamically imported module|Importing a module script failed|Expected a JavaScript-or-Wasm module script/i.test(message)
+  const reloadKey = 'vecta:chunk-reload-attempted'
+
+  if (isStaleChunk && !sessionStorage.getItem(reloadKey)) {
+    sessionStorage.setItem(reloadKey, '1')
+    window.location.reload()
+  }
+})
+
+router.afterEach(() => {
+  sessionStorage.removeItem('vecta:chunk-reload-attempted')
+})
+
 export default router
