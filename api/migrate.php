@@ -50,6 +50,21 @@ function splitSqlStatements(string $sql): array
     return $statements;
 }
 
+function isIgnorableMigrationError(Throwable $e): bool
+{
+    if (!$e instanceof PDOException) {
+        return false;
+    }
+
+    $driverCode = (int) ($e->errorInfo[1] ?? 0);
+
+    // Allow recovery from partially-applied historical migrations.
+    return in_array($driverCode, [
+        1060, // Duplicate column name
+        1061, // Duplicate key/index name
+    ], true);
+}
+
 $pdo = null;
 try {
     $pdo = db();
@@ -99,7 +114,15 @@ foreach (migrationFiles($migrationsDir) as $file) {
 
     try {
         foreach ($statements as $statement) {
-            $pdo->exec($statement);
+            try {
+                $pdo->exec($statement);
+            } catch (Throwable $e) {
+                if (!isIgnorableMigrationError($e)) {
+                    throw $e;
+                }
+
+                echo "WARN  {$version}: {$e->getMessage()}\n";
+            }
         }
 
         $stmt = $pdo->prepare('INSERT INTO schema_migrations (version) VALUES (?)');
