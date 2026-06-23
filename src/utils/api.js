@@ -107,7 +107,10 @@ async function request(path, options = {}, allowRetry = true) {
   }
 
   if (!res.ok) {
-    throw new Error(data.error || `Request failed (${res.status})`)
+    const error = new Error(data.error || `Request failed (${res.status})`)
+    error.status = res.status
+    error.data = data
+    throw error
   }
 
   return data

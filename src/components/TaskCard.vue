@@ -5,6 +5,7 @@ import { activeProject } from '@/stores/projectStore'
 import { openEditTask, openTaskDetail } from '@/stores/uiStore'
 import { STATUS_META } from '@/utils/constants'
 import { formatShortDate } from '@/utils/dates'
+import { t } from '@/utils/i18n'
 
 const props = defineProps({
   task: { 

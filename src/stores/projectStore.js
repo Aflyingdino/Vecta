@@ -54,6 +54,7 @@ export async function refreshProjects() {
     const data = await api.get('/projects')
     _state.projects = data
   } catch (err) {
+    if (err.status === 401) throw err
     console.warn('Project sync failed:', err)
   }
 }
@@ -151,14 +152,35 @@ export async function updateMemberRole(projectId, memberId, role) {
 /* ─── Calendar scheduling ─────────────────── */
 
 export async function scheduleTask(projectId, taskId, calendarStart, calendarDuration) {
-  await api.patch(`/tasks/${taskId}/schedule`, { calendarStart, calendarDuration })
   const p = _state.projects.find(p => p.id === projectId)
-  if (!p) return
+  if (!p) {
+    await api.patch(`/tasks/${taskId}/schedule`, { calendarStart, calendarDuration })
+    return
+  }
   const all = [...p.backlog, ...p.groups.flatMap(g => g.tasks)]
   const task = all.find(t => t.id === taskId)
+  const previous = task ? {
+    calendarStart: task.calendarStart,
+    calendarDuration: task.calendarDuration,
+  } : null
+
   if (task) {
     task.calendarStart    = calendarStart
     task.calendarDuration = calendarDuration
+  }
+
+  try {
+    const savedTask = await api.patch(`/tasks/${taskId}/schedule`, { calendarStart, calendarDuration })
+    if (task && savedTask) {
+      task.calendarStart = savedTask.calendarStart
+      task.calendarDuration = savedTask.calendarDuration
+    }
+  } catch (err) {
+    if (task && previous) {
+      task.calendarStart = previous.calendarStart
+      task.calendarDuration = previous.calendarDuration
+    }
+    throw err
   }
 }
 

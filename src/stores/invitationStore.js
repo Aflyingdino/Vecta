@@ -38,6 +38,7 @@ export async function refreshInvitations() {
     const data = await api.get('/invitations')
     _state.invitations = data
   } catch (err) {
+    if (err.status === 401) throw err
     console.warn('Invitation sync failed:', err)
   }
 }

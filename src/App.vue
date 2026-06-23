@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { applyTheme } from '@/stores/uiStore'
-import { isLoggedIn } from '@/stores/authStore'
+import { isLoggedIn, logout } from '@/stores/authStore'
 import { refreshProjects } from '@/stores/projectStore'
 import { refreshInvitations } from '@/stores/invitationStore'
 import { refreshNotifications } from '@/stores/notificationStore'
@@ -14,11 +14,20 @@ let syncTimer = null
 
 async function syncProjects() {
   if (!isLoggedIn.value) return
-  await Promise.all([
-    refreshProjects(),
-    refreshInvitations(),
-    refreshNotifications(),
-  ])
+  try {
+    await Promise.all([
+      refreshProjects(),
+      refreshInvitations(),
+      refreshNotifications(),
+    ])
+  } catch (err) {
+    if (err.status === 401) {
+      stopSync()
+      await logout()
+      return
+    }
+    console.warn('Background sync failed:', err)
+  }
 }
 
 function startSync() {

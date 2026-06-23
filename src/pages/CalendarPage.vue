@@ -316,7 +316,7 @@ async function onDrop(event, dayDate) {
     return // leave task at its original position
   }
 
-  await scheduleTask(projectId, taskId, buildISO(dayDate, minute), snappedDuration)
+  await scheduleTask(projectId, taskId, buildCalendarDateTime(dayDate, minute), snappedDuration)
   dragGrabOffsetMin.value = 0
 }
 
@@ -341,10 +341,19 @@ function snapMinute(offsetY) {
   return Math.max(0, Math.min(23 * 60 + 55, Math.round(rawMin / 5) * 5))
 }
 
-function buildISO(date, minute) {
+function buildCalendarDateTime(date, minute) {
   const d = new Date(date)
   d.setHours(Math.floor(minute / 60), minute % 60, 0, 0)
-  return d.toISOString()
+  const pad = value => String(value).padStart(2, '0')
+  return [
+    d.getFullYear(),
+    pad(d.getMonth() + 1),
+    pad(d.getDate()),
+  ].join('-') + ' ' + [
+    pad(d.getHours()),
+    pad(d.getMinutes()),
+    pad(d.getSeconds()),
+  ].join(':')
 }
 
 /* ═══════════════════════════════════════════════
@@ -444,7 +453,7 @@ function startTopResize(event, task) {
     const newDuration = endMin - newStartMin
     const others = tasksOnDay(dayDate, task.id)
     const hasCollision = others.some(o => newStartMin < o.endMin && endMin > o.startMin)
-    if (!hasCollision) scheduleTask(task._projectId, task.id, buildISO(dayDate, newStartMin), newDuration)
+    if (!hasCollision) scheduleTask(task._projectId, task.id, buildCalendarDateTime(dayDate, newStartMin), newDuration)
   }
   function onUp() {
     document.removeEventListener('mousemove', onMove)

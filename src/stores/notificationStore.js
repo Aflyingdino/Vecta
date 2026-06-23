@@ -55,6 +55,7 @@ export async function fetchNotifications() {
     const data = await api.get('/notifications')
     _state.notifications = data
   } catch (err) {
+    if (err.status === 401) throw err
     console.warn('Notification sync failed:', err)
   }
 }
