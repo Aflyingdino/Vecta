@@ -1,10 +1,17 @@
 ALTER TABLE users
-    ADD COLUMN subscription_started_at DATETIME DEFAULT NULL AFTER subscription_plan,
-    ADD COLUMN subscription_expires_at DATETIME DEFAULT NULL AFTER subscription_started_at,
-    ADD COLUMN subscription_next_plan ENUM('free','standard','premium','premium_plus','enterprise') DEFAULT NULL AFTER subscription_expires_at,
-    ADD COLUMN subscription_next_starts_at DATETIME DEFAULT NULL AFTER subscription_next_plan,
-    ADD COLUMN subscription_next_expires_at DATETIME DEFAULT NULL AFTER subscription_next_starts_at,
-    ADD COLUMN subscription_updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER subscription_next_expires_at;
+    ADD COLUMN subscription_started_at DATETIME DEFAULT NULL AFTER subscription_plan;
+
+ALTER TABLE users
+    ADD COLUMN subscription_expires_at DATETIME DEFAULT NULL AFTER subscription_started_at;
+
+ALTER TABLE users
+    ADD COLUMN subscription_next_plan ENUM('free','standard','premium','premium_plus','enterprise') DEFAULT NULL AFTER subscription_expires_at;
+
+ALTER TABLE users
+    ADD COLUMN subscription_next_starts_at DATETIME DEFAULT NULL AFTER subscription_next_plan;
+
+ALTER TABLE users
+    ADD COLUMN subscription_next_expires_at DATETIME DEFAULT NULL AFTER subscription_next_starts_at;
 
 CREATE TABLE IF NOT EXISTS subscription_plan_events (
     event_id INT AUTO_INCREMENT PRIMARY KEY,
