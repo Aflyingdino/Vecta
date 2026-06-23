@@ -374,6 +374,24 @@ Response: { "token": "<csrf-token>" }
   - Auth: optional session
   - Response: `{ id, name, email, createdAt }` when authenticated
 
+### Invitations
+
+- `GET /api/invitations`
+  - Auth: session
+  - Response: pending invitations for the logged-in user
+- `POST /api/projects/{id}/invites`
+  - Auth: session + CSRF + project admin/owner
+  - Body: `{ email, role? }`
+  - Response: invitation record
+- `POST /api/invitations/{id}/accept`
+  - Auth: session + CSRF
+  - Response: accepted invitation record
+- `POST /api/invitations/{id}/decline`
+  - Auth: session + CSRF
+  - Response: declined invitation record
+
+Accepted invitations add the user to the project, and pending invitations appear in the dashboard Invitations tab until they are handled.
+
 ### Projects
 
 - `GET /api/projects`
