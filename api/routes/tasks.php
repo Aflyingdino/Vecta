@@ -540,6 +540,8 @@ function buildTaskResponse(int $taskId): array
         'createdAt'   => $r['created_at'],
     ], $stmt->fetchAll());
 
+    $attachments = fetchTaskAttachments($tid);
+
     return [
         'id'               => $tid,
         'text'             => $t['title'],

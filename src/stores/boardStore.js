@@ -1,5 +1,5 @@
 ﻿import { computed } from 'vue'
-import { activeProject, logActivity, _save } from './projectStore'
+import { activeProject, fetchProject, logActivity, markLocalProjectMutation, _save } from './projectStore'
 import { api } from '@/utils/api'
 import { user } from './authStore'
 import { STATUS_META } from '../utils/constants'
@@ -209,13 +209,17 @@ export async function createTask(data, targetType, targetId) {
     if (groupId !== null) {
       const group = board.groups.find(g => g.id === groupId)
       if (group) {
+        markLocalProjectMutation()
         group.tasks.push(task)
         logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
+        fetchProject(board.id).catch(err => console.warn('Project refresh after task create failed:', err))
         return task
       }
     }
+    markLocalProjectMutation()
     board.backlog.push(task)
     logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
+    fetchProject(board.id).catch(err => console.warn('Project refresh after task create failed:', err))
     return task
   } catch (err) {
     console.error('Failed to create task:', err)
@@ -237,6 +241,7 @@ export async function updateTask(taskId, data) {
     if ('status' in data && data.status !== task.status) {
       logActivity(board.id, 'status_changed', `${actor()} marked "${name}" as ${STATUS_META[data.status]?.label ?? data.status}`)
     }
+    markLocalProjectMutation()
     Object.assign(task, data)
     await api.patch(`/tasks/${taskId}`, data)
   } catch (err) {
@@ -254,6 +259,7 @@ export async function uploadTaskAttachments(taskId, files) {
   fileList.forEach(file => formData.append('files[]', file))
 
   const uploaded = await api.upload(`/tasks/${taskId}/attachments`, formData)
+  markLocalProjectMutation()
   task.attachments = [...(task.attachments || []), ...uploaded]
   return uploaded
 }
@@ -263,6 +269,7 @@ export async function deleteTaskAttachment(taskId, attachmentId) {
   if (!task) return
 
   const previous = [...(task.attachments || [])]
+  markLocalProjectMutation()
   task.attachments = previous.filter(attachment => attachment.id !== attachmentId)
 
   try {
@@ -610,6 +617,7 @@ export async function moveTaskToGroup(taskId, targetGroupId) {
   let sourceIndex = -1
   const backlogIdx = board.backlog.findIndex((t) => t.id === taskId)
   if (backlogIdx !== -1) {
+    markLocalProjectMutation()
     task = board.backlog.splice(backlogIdx, 1)[0]
     source = board.backlog
     sourceIndex = backlogIdx
@@ -617,6 +625,7 @@ export async function moveTaskToGroup(taskId, targetGroupId) {
     for (const group of board.groups) {
       const idx = group.tasks.findIndex((t) => t.id === taskId)
       if (idx !== -1) {
+        markLocalProjectMutation()
         task = group.tasks.splice(idx, 1)[0]
         source = group.tasks
         sourceIndex = idx
@@ -648,6 +657,7 @@ export async function moveTaskToBacklog(taskId) {
     const idx = group.tasks.findIndex((t) => t.id === taskId)
     if (idx !== -1) {
       const task = group.tasks.splice(idx, 1)[0]
+      markLocalProjectMutation()
       board.backlog.push(task)
       try {
         const savedTask = await api.patch(`/tasks/${taskId}/move`, { groupId: null })

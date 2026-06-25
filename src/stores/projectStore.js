@@ -13,6 +13,9 @@ const _state = reactive({
   error: null,
 })
 
+let refreshRequestSeq = 0
+let mutationSeq = 0
+
 // ─── Getters ───────────────────────────────────
 export const projects = computed(() => _state.projects.filter(p => !p.archived))
 export const archivedProjects = computed(() => _state.projects.filter(p => !!p.archived))
@@ -34,13 +37,26 @@ function _upsert(project) {
   }
 }
 
+export function markLocalProjectMutation() {
+  mutationSeq++
+}
+
+function replaceProjectsFromServer(data, startedAtMutationSeq, requestSeq) {
+  if (requestSeq !== refreshRequestSeq || startedAtMutationSeq !== mutationSeq) {
+    return
+  }
+  _state.projects = data
+}
+
 /* ─── Project actions ─────────────────────── */
 
 export async function fetchProjects() {
   _state.loading = true
+  const requestSeq = ++refreshRequestSeq
+  const startedAtMutationSeq = mutationSeq
   try {
     const data = await api.get('/projects')
-    _state.projects = data
+    replaceProjectsFromServer(data, startedAtMutationSeq, requestSeq)
     _state.error = null
   } catch (err) {
     _state.error = err.message
@@ -50,9 +66,11 @@ export async function fetchProjects() {
 }
 
 export async function refreshProjects() {
+  const requestSeq = ++refreshRequestSeq
+  const startedAtMutationSeq = mutationSeq
   try {
     const data = await api.get('/projects')
-    _state.projects = data
+    replaceProjectsFromServer(data, startedAtMutationSeq, requestSeq)
   } catch (err) {
     if (err.status === 401) throw err
     console.warn('Project sync failed:', err)
