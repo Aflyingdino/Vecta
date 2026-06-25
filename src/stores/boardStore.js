@@ -206,10 +206,15 @@ export async function createTask(data, targetType, targetId) {
     task.comments = task.comments || []
     task.attachments = task.attachments || []
 
-    if (groupId !== null) {
-      const group = board.groups.find(g => g.id === groupId)
+    const savedGroupId = task.groupId != null ? Number(task.groupId) : groupId
+    if (savedGroupId !== null) {
+      const group = board.groups.find(g => g.id === savedGroupId)
       if (group) {
         markLocalProjectMutation()
+        board.backlog = board.backlog.filter(t => t.id !== task.id)
+        for (const existingGroup of board.groups) {
+          existingGroup.tasks = existingGroup.tasks.filter(t => t.id !== task.id)
+        }
         group.tasks.push(task)
         logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
         fetchProject(board.id).catch(err => console.warn('Project refresh after task create failed:', err))
@@ -217,6 +222,9 @@ export async function createTask(data, targetType, targetId) {
       }
     }
     markLocalProjectMutation()
+    for (const existingGroup of board.groups) {
+      existingGroup.tasks = existingGroup.tasks.filter(t => t.id !== task.id)
+    }
     board.backlog.push(task)
     logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
     fetchProject(board.id).catch(err => console.warn('Project refresh after task create failed:', err))

@@ -209,6 +209,7 @@ function fetchFullProject(int $projectId, string $role): array
         $tid = (int) $r['task_id'];
         return [
             'id'               => $tid,
+            'groupId'          => $r['group_id'] !== null ? (int) $r['group_id'] : null,
             'text'             => $r['title'],
             'description'      => $r['description'] ?? '',
             'status'           => $r['status'],
