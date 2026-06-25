@@ -138,9 +138,9 @@ if (APP_ENV === 'production') {
 
 define('PASSWORD_MIN_LENGTH', envInt('PASSWORD_MIN_LENGTH', 10));
 
-/* Session lifetime in seconds */
-define('SESSION_LIFETIME', envInt('SESSION_LIFETIME', 86400));
-define('SESSION_IDLE_TIMEOUT', envInt('SESSION_IDLE_TIMEOUT', 900)); // 15 minutes
+/* Session lifetime in seconds. Idle timeout is disabled by default. */
+define('SESSION_LIFETIME', envInt('SESSION_LIFETIME', 60 * 60 * 24 * 30));
+define('SESSION_IDLE_TIMEOUT', envInt('SESSION_IDLE_TIMEOUT', 0));
 define('SESSION_REGENERATE_INTERVAL', envInt('SESSION_REGENERATE_INTERVAL', 900));
 define('SESSION_COOKIE_NAME', APP_ENV === 'production' ? '__Host-vecta_session' : 'vecta_session');
 
@@ -232,7 +232,7 @@ function initSession(): void
         session_start();
     }
 
-    if (isset($_SESSION['last_activity_at']) && ($now - (int) $_SESSION['last_activity_at']) > SESSION_IDLE_TIMEOUT) {
+    if (SESSION_IDLE_TIMEOUT > 0 && isset($_SESSION['last_activity_at']) && ($now - (int) $_SESSION['last_activity_at']) > SESSION_IDLE_TIMEOUT) {
         clearSessionState();
         session_start();
     }

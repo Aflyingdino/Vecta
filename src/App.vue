@@ -1,13 +1,14 @@
 ﻿<script setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { applyTheme } from '@/stores/uiStore'
-import { isLoggedIn, logout } from '@/stores/authStore'
+import { checkSession, isLoggedIn, logout } from '@/stores/authStore'
 import { refreshProjects } from '@/stores/projectStore'
 import { refreshInvitations } from '@/stores/invitationStore'
 import { refreshNotifications } from '@/stores/notificationStore'
 
 const route = useRoute()
+const router = useRouter()
 
 const SYNC_INTERVAL_MS = 10000
 let syncTimer = null
@@ -22,8 +23,13 @@ async function syncProjects() {
     ])
   } catch (err) {
     if (err.status === 401) {
+      const stillLoggedIn = await checkSession().catch(() => false)
+      if (stillLoggedIn) return
       stopSync()
       await logout()
+      if (route.matched.some(record => record.meta.requiresAuth)) {
+        router.replace({ name: 'login', query: { redirect: route.fullPath } })
+      }
       return
     }
     console.warn('Background sync failed:', err)
