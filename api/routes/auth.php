@@ -157,6 +157,7 @@ function handleMe(): never
 
 function handleUpdateSubscription(): never
 {
+    ensureRuntimeSchema();
     $uid = requireAuth();
     $data = jsonBody();
     requireFields($data, ['subscriptionPlan']);

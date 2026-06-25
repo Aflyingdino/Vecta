@@ -14,7 +14,7 @@ function handleAddMember(int $projectId): never
     $email = normalizeEmail($data['email']);
     $role  = requireEnumValue(canonicalProjectRole((string) ($data['role'] ?? 'collaborator')), ['admin', 'collaborator', 'viewer'], 'role');
 
-    if ($role === 'admin' && !currentUserRolesEnabled($uid)) {
+    if ($role !== 'collaborator' && !currentUserRolesEnabled($uid)) {
         jsonError('Roles are not available on your plan', 403);
     }
 
