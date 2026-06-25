@@ -207,8 +207,10 @@ function initSession(): void
     ini_set('session.use_strict_mode', '1');
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
-    ini_set('session.sid_length', '48');
-    ini_set('session.sid_bits_per_character', '6');
+    if (PHP_VERSION_ID < 80400) {
+        ini_set('session.sid_length', '48');
+        ini_set('session.sid_bits_per_character', '6');
+    }
 
     session_name(SESSION_COOKIE_NAME);
 
