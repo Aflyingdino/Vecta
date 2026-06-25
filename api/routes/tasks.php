@@ -544,6 +544,7 @@ function buildTaskResponse(int $taskId): array
 
     return [
         'id'               => $tid,
+        'groupId'          => $t['group_id'] !== null ? (int) $t['group_id'] : null,
         'text'             => $t['title'],
         'description'      => $t['description'] ?? '',
         'status'           => $t['status'],
