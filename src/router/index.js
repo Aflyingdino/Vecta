@@ -14,7 +14,6 @@ const DashboardPage  = () => import('@/pages/DashboardPage.vue')
 const ActivityPage   = () => import('@/pages/ActivityPage.vue')
 const CalendarPage   = () => import('@/pages/CalendarPage.vue')
 const AccountPage    = () => import('@/pages/AccountPage.vue')
-const ProjectDashboardPage = () => import('@/pages/ProjectDashboardPage.vue')
 
 const routes = [
   /* ── Public ── */
@@ -41,7 +40,7 @@ const routes = [
   {
     path: '/projects/:id/dashboard',
     name: 'project-dashboard',
-    component: ProjectDashboardPage,
+    redirect: { name: 'dashboard' },
     meta: { requiresAuth: true },
   },
   {

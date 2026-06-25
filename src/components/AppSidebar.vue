@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { projects, activeProjectId } from '@/stores/projectStore'
-import { isLoggedIn, user, logout } from '@/stores/authStore'
+import { projects } from '@/stores/projectStore'
+import { user, logout } from '@/stores/authStore'
 import { readString, writeString } from '@/utils/safeStorage'
 import { openSettings } from '@/stores/uiStore'
 import { getPlanLabel } from '@/utils/subscriptionPlans'
@@ -18,30 +18,15 @@ function toggleCollapse() {
   writeString('tp_sidebar_collapsed', collapsed.value ? '1' : '0')
 }
 
-const currentProjectId = computed(() =>
-  route.params.id ? Number(route.params.id) : null
-)
-
 const navLinks = [
   { name: 'dashboard', labelKey: 'dashboard', icon: 'dashboard' },
   { name: 'projects',  labelKey: 'projects', icon: 'grid' },
   { name: 'calendar',  labelKey: 'calendar', icon: 'calendar' },
 ]
 
-function navTarget(link) {
-  if (link.name !== 'dashboard') return { name: link.name }
-  if (activeProjectId.value) {
-    return { name: 'project-dashboard', params: { id: activeProjectId.value } }
-  }
-  if (currentProjectId.value) {
-    return { name: 'project-dashboard', params: { id: currentProjectId.value } }
-  }
-  return { name: 'dashboard' }
-}
-
 function isActive(name) {
   if (name === 'dashboard') {
-    return route.name === 'dashboard' || route.name === 'project-dashboard'
+    return route.name === 'dashboard'
   }
   return route.name === name
 }
@@ -88,7 +73,7 @@ const userInitials = computed(() => {
       <router-link
         v-for="link in navLinks"
         :key="link.name"
-        :to="navTarget(link)"
+        :to="{ name: link.name }"
         class="nav-item"
         :class="{ 'nav-item--active': isActive(link.name) }"
         :title="collapsed ? t(link.labelKey) : ''"
