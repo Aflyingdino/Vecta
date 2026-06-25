@@ -112,10 +112,10 @@ function handleCreateInvitation(int $projectId): never
 
     $role = canonicalProjectRole((string) ($data['role'] ?? 'collaborator'));
     $role = requireEnumValue($role, ['admin', 'collaborator', 'viewer'], 'role');
+    if ($role !== 'collaborator' && !currentUserRolesEnabled($uid)) {
+        jsonError('Roles are not available on your plan', 403);
+    }
     if ($role === 'admin') {
-        if (!currentUserRolesEnabled($uid)) {
-            jsonError('Roles are not available on your plan', 403);
-        }
         requireProjectOwner($projectId, $uid);
     }
 
