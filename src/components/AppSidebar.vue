@@ -50,6 +50,12 @@ function isBoardActive(projectId) {
   return route.name === 'board' && Number(route.params.id) === projectId
 }
 
+function capitalizeProjectName(name) {
+  const value = String(name || '').trim()
+  if (!value) return ''
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1)
+}
+
 async function handleLogout() {
   await logout()
   router.push({ name: 'home' })
@@ -121,7 +127,7 @@ const userInitials = computed(() => {
         :title="project.name"
       >
         <span class="project-dot" :style="{ background: project.color }"></span>
-        <span v-if="!collapsed" class="project-name">{{ project.name }}</span>
+        <span v-if="!collapsed" class="project-name">{{ capitalizeProjectName(project.name) }}</span>
         <span v-else class="project-collapsed-hint">···</span>
       </router-link>
     </div>
