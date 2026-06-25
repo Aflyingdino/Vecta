@@ -425,6 +425,8 @@ function startResize(event, task) {
   event.stopPropagation()
   const startY = event.clientY
   const startDuration = task.calendarDuration || 60
+  const originalDuration = task.calendarDuration || 60
+  let pendingDuration = originalDuration
 
   function onMove(e) {
     const dy = e.clientY - startY
@@ -436,11 +438,21 @@ function startResize(event, task) {
     const taskStartMin = taskStart.getHours() * 60 + taskStart.getMinutes()
     const others = tasksOnDay(taskDay, task.id)
     const hasCollision = others.some(o => taskStartMin < o.endMin && (taskStartMin + newDuration) > o.startMin)
-    if (!hasCollision) scheduleTask(task._projectId, task.id, task.calendarStart, newDuration)
+    if (!hasCollision) {
+      pendingDuration = newDuration
+      task.calendarDuration = newDuration
+    }
   }
-  function onUp() {
+  async function onUp() {
     document.removeEventListener('mousemove', onMove)
     document.removeEventListener('mouseup', onUp)
+    if (pendingDuration === originalDuration) return
+    try {
+      await scheduleTask(task._projectId, task.id, task.calendarStart, pendingDuration)
+    } catch (err) {
+      task.calendarDuration = originalDuration
+      console.error('Failed to resize calendar task:', err)
+    }
   }
   document.addEventListener('mousemove', onMove)
   document.addEventListener('mouseup', onUp)
@@ -453,9 +465,13 @@ function startTopResize(event, task) {
   const startY = event.clientY
   const origDate = new Date(task.calendarStart)
   const origStartMin = origDate.getHours() * 60 + origDate.getMinutes()
-  const endMin = origStartMin + (task.calendarDuration || 60)
+  const originalStart = task.calendarStart
+  const originalDuration = task.calendarDuration || 60
+  const endMin = origStartMin + originalDuration
   const dayDate = new Date(origDate)
   dayDate.setHours(0, 0, 0, 0)
+  let pendingStart = originalStart
+  let pendingDuration = originalDuration
 
   function onMove(e) {
     const dy = e.clientY - startY
@@ -465,11 +481,24 @@ function startTopResize(event, task) {
     const newDuration = endMin - newStartMin
     const others = tasksOnDay(dayDate, task.id)
     const hasCollision = others.some(o => newStartMin < o.endMin && endMin > o.startMin)
-    if (!hasCollision) scheduleTask(task._projectId, task.id, buildCalendarDateTime(dayDate, newStartMin), newDuration)
+    if (!hasCollision) {
+      pendingStart = buildCalendarDateTime(dayDate, newStartMin)
+      pendingDuration = newDuration
+      task.calendarStart = pendingStart
+      task.calendarDuration = newDuration
+    }
   }
-  function onUp() {
+  async function onUp() {
     document.removeEventListener('mousemove', onMove)
     document.removeEventListener('mouseup', onUp)
+    if (pendingStart === originalStart && pendingDuration === originalDuration) return
+    try {
+      await scheduleTask(task._projectId, task.id, pendingStart, pendingDuration)
+    } catch (err) {
+      task.calendarStart = originalStart
+      task.calendarDuration = originalDuration
+      console.error('Failed to move calendar task start:', err)
+    }
   }
   document.addEventListener('mousemove', onMove)
   document.addEventListener('mouseup', onUp)
