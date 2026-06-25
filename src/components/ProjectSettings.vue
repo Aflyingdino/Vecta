@@ -1,10 +1,10 @@
 ﻿<script setup>
 import { ref, computed } from 'vue'
-import { ui, closeSettings, toggleTheme } from '@/stores/uiStore'
+import { ui, closeSettings } from '@/stores/uiStore'
 import { toggleMuteProject, mutedProjectIds } from '@/stores/notificationStore'
 import { projectLabels, createLabel, deleteLabel, updateLabel } from '@/stores/boardStore'
-import { activeProject, inviteMember, removeMember, updateMemberRole } from '@/stores/projectStore'
-import { revokeInvitation } from '@/stores/invitationStore'
+import { activeProject, inviteMember, removeMember, updateMemberRole, fetchProject } from '@/stores/projectStore'
+import { revokeInvitation, refreshInvitations } from '@/stores/invitationStore'
 import ColorPicker from './ColorPicker.vue'
 import { getPlanLabel, canUseRoles } from '@/utils/subscriptionPlans'
 import { user } from '@/stores/authStore'
@@ -45,6 +45,15 @@ const memberRole  = ref('collaborator')
 const memberError = ref('')
 const memberSuccess = ref('')
 const rolesEnabled = computed(() => canUseRoles(user.subscriptionPlan))
+const canInviteAdmins = computed(() => rolesEnabled.value && activeProject.value?.role === 'owner')
+const inviteRoleOptions = computed(() => {
+  const roles = [
+    { value: 'collaborator', label: 'Lid' },
+    { value: 'viewer', label: 'Viewer' },
+  ]
+  if (canInviteAdmins.value) roles.unshift({ value: 'admin', label: 'Admin' })
+  return roles
+})
 
 async function sendInvitation() {
   memberError.value = ''
@@ -54,7 +63,8 @@ async function sendInvitation() {
   const p = activeProject.value
   if (!p) return
   try {
-    const invitation = await inviteMember(p.id, email, rolesEnabled.value ? memberRole.value : 'collaborator')
+    const role = inviteRoleOptions.value.some(option => option.value === memberRole.value) ? memberRole.value : 'collaborator'
+    const invitation = await inviteMember(p.id, email, rolesEnabled.value ? role : 'collaborator')
     if (!p.pendingInvitations) p.pendingInvitations = []
     const existingIdx = p.pendingInvitations.findIndex((item) => item.id === invitation.id)
     if (existingIdx >= 0) p.pendingInvitations[existingIdx] = invitation
@@ -62,8 +72,12 @@ async function sendInvitation() {
     memberSuccess.value = invitation.inviteUrl ? `Uitnodigingslink aangemaakt: ${invitation.inviteUrl}` : 'Uitnodiging verstuurd.'
     memberEmail.value = ''
     memberRole.value  = 'collaborator'
+    await Promise.all([
+      fetchProject(p.id),
+      refreshInvitations().catch(() => {}),
+    ])
   } catch (err) {
-    memberError.value = err.message
+    memberError.value = err.message || 'Uitnodiging kon niet worden verstuurd.'
   }
 }
 
@@ -80,8 +94,13 @@ async function copyInviteLink(invite) {
 async function cancelInvitation(inviteId) {
   const p = activeProject.value
   if (!p) return
-  await revokeInvitation(inviteId)
-  p.pendingInvitations = (p.pendingInvitations || []).filter((invite) => invite.id !== inviteId)
+  try {
+    await revokeInvitation(inviteId)
+    p.pendingInvitations = (p.pendingInvitations || []).filter((invite) => invite.id !== inviteId)
+    await fetchProject(p.id)
+  } catch (err) {
+    memberError.value = err.message || 'Uitnodiging kon niet worden ingetrokken.'
+  }
 }
 
 async function changeRole(memberId, role) {
@@ -220,16 +239,6 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
             <!-- ══ MEMBERS TAB ══ -->
             <div v-if="activeTab === 'members'" class="tab-content">
 
-              <div class="members-actions-row">
-                <button
-                  class="settings-theme-btn"
-                  @click="toggleTheme"
-                  :title="ui.lightMode ? t('switchToDark') : t('switchToLight')"
-                >
-                  {{ ui.lightMode ? t('switchToDark') : t('switchToLight') }}
-                </button>
-              </div>
-
               <!-- Invite form -->
               <div class="add-label-form">
                 <p class="section-label">{{ t('invite') }}</p>
@@ -242,13 +251,12 @@ const isProjectMuted = computed(() => !!activeProject.value && mutedProjectIds.v
                     @keydown.enter="sendInvitation"
                   />
                   <select v-model="memberRole" class="role-select" :disabled="!rolesEnabled">
-                    <option value="admin">Admin</option>
-                    <option value="collaborator">Lid</option>
-                    <option value="viewer">Viewer</option>
+                    <option v-for="role in inviteRoleOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
                   </select>
                   <button class="btn-add" @click="sendInvitation">{{ t('invite') }}</button>
                 </div>
                 <p v-if="!rolesEnabled" class="member-note">{{ t('rolesAvailablePremium') }}</p>
+                <p v-else-if="!canInviteAdmins" class="member-note">Alleen projecteigenaren kunnen admins uitnodigen.</p>
                 <p class="member-note">{{ t('invitationInboxHint') }}</p>
                 <p v-if="memberSuccess" class="member-success">{{ memberSuccess }}</p>
                 <p v-if="memberError" class="member-error">{{ memberError }}</p>

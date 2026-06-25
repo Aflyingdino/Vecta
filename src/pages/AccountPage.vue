@@ -93,26 +93,51 @@ async function choosePlan(planKey) {
             </div>
           </div>
           <div class="settings-grid">
-            <div class="settings-group">
-              <p class="settings-group-title">{{ t('appearance') }}</p>
-              <div class="settings-options">
-                <button class="option-btn" :class="{ 'option-btn--active': ui.lightMode }" @click="setThemeMode('light')" type="button">
-                  {{ t('light') }}
-                </button>
-                <button class="option-btn" :class="{ 'option-btn--active': !ui.lightMode }" @click="setThemeMode('dark')" type="button">
-                  {{ t('dark') }}
-                </button>
+            <div class="settings-panel">
+              <div class="settings-panel__icon">
+                <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36 6.36-.7-.7M6.34 6.34l-.7-.7m12.72 0-.7.7M6.34 17.66l-.7.7"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+              </div>
+              <div class="settings-panel__main">
+                <p class="settings-group-title">{{ t('appearance') }}</p>
+                <div class="segmented-control" role="group" :aria-label="t('appearance')">
+                  <button class="segment-btn" :class="{ 'segment-btn--active': ui.lightMode }" @click="setThemeMode('light')" type="button">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="4"/>
+                      <path stroke-linecap="round" d="M12 2v2m0 16v2M4 12H2m20 0h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/>
+                    </svg>
+                    {{ t('light') }}
+                  </button>
+                  <button class="segment-btn" :class="{ 'segment-btn--active': !ui.lightMode }" @click="setThemeMode('dark')" type="button">
+                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>
+                    </svg>
+                    {{ t('dark') }}
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="settings-group">
-              <p class="settings-group-title">{{ t('language') }}</p>
-              <div class="settings-options">
-                <button class="option-btn" :class="{ 'option-btn--active': ui.language === 'nl' }" @click="setLanguage('nl')" type="button">
-                  {{ t('dutch') }}
-                </button>
-                <button class="option-btn" :class="{ 'option-btn--active': ui.language === 'en' }" @click="setLanguage('en')" type="button">
-                  {{ t('english') }}
-                </button>
+            <div class="settings-panel">
+              <div class="settings-panel__icon">
+                <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16M4 12h10M4 19h7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 13l4 6m0-6-4 6"/>
+                </svg>
+              </div>
+              <div class="settings-panel__main">
+                <p class="settings-group-title">{{ t('language') }}</p>
+                <div class="segmented-control" role="group" :aria-label="t('language')">
+                  <button class="segment-btn" :class="{ 'segment-btn--active': ui.language === 'nl' }" @click="setLanguage('nl')" type="button">
+                    NL
+                    <span>{{ t('dutch') }}</span>
+                  </button>
+                  <button class="segment-btn" :class="{ 'segment-btn--active': ui.language === 'en' }" @click="setLanguage('en')" type="button">
+                    EN
+                    <span>{{ t('english') }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -204,6 +229,89 @@ async function choosePlan(planKey) {
   font-size: 12px; color: var(--color-text-2);
 }
 .account-error { color: var(--color-danger); font-size: 13px; }
+.account-card--settings { display: flex; flex-direction: column; gap: 16px; }
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.settings-header h2 {
+  margin-top: 3px;
+  font-size: 20px;
+  color: var(--color-text-1);
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+.settings-panel {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-1);
+}
+.settings-panel__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.settings-panel__main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.settings-group-title {
+  font-size: 12px;
+  color: var(--color-text-2);
+  font-weight: 700;
+}
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-0);
+}
+.segment-btn {
+  min-height: 34px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.segment-btn span {
+  font-weight: 600;
+  color: inherit;
+}
+.segment-btn--active {
+  color: var(--color-text-1);
+  background: var(--color-surface-3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
 .plan-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px;
 }

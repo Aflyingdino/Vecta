@@ -257,6 +257,22 @@ function goToActivityTask(entry) {
         <p class="page-sub">Welkom terug, {{ user.name }}</p>
       </div>
 
+      <section v-if="invitationCount" class="invitation-callout">
+        <div class="invitation-callout__icon">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l8.4 5.6a1.2 1.2 0 001.2 0L21 8"/>
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+          </svg>
+        </div>
+        <div class="invitation-callout__body">
+          <span class="invitation-callout__title">{{ invitationCount }} openstaande uitnodiging{{ invitationCount !== 1 ? 'en' : '' }}</span>
+          <span class="invitation-callout__text">Bekijk en accepteer projectuitnodigingen vanaf je dashboard.</span>
+        </div>
+        <button class="invitation-callout__btn" @click="activeTab = 'invitations'">
+          {{ t('invitations') }}
+        </button>
+      </section>
+
       <!-- Stats row (always visible) -->
       <div class="stats-grid">
         <button class="stat-card stat-card--accent" :class="{ 'stat-card--active': statFilter === 'started' }" @click="toggleStatFilter('started')">
@@ -627,6 +643,53 @@ function goToActivityTask(entry) {
 .page-header { display: flex; flex-direction: column; gap: 4px; }
 .page-title { font-size: 26px; font-weight: 800; color: var(--color-text-1); letter-spacing: -0.02em; }
 .page-sub { font-size: 14px; color: var(--color-text-2); }
+.invitation-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #8e4ec6 35%, var(--color-border));
+  background: color-mix(in srgb, #8e4ec6 9%, var(--color-surface-2));
+}
+.invitation-callout__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #b087f8;
+  background: color-mix(in srgb, #8e4ec6 16%, transparent);
+}
+.invitation-callout__body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.invitation-callout__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-text-1);
+}
+.invitation-callout__text {
+  font-size: 12px;
+  color: var(--color-text-3);
+}
+.invitation-callout__btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, #8e4ec6 45%, transparent);
+  background: color-mix(in srgb, #8e4ec6 14%, transparent);
+  color: var(--color-text-1);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
 /* Stats */
 .stats-grid {
