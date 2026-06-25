@@ -245,6 +245,34 @@ export async function updateTask(taskId, data) {
   }
 }
 
+export async function uploadTaskAttachments(taskId, files) {
+  const task = findTask(taskId)
+  const fileList = Array.from(files || [])
+  if (!task || fileList.length === 0) return []
+
+  const formData = new FormData()
+  fileList.forEach(file => formData.append('files[]', file))
+
+  const uploaded = await api.upload(`/tasks/${taskId}/attachments`, formData)
+  task.attachments = [...(task.attachments || []), ...uploaded]
+  return uploaded
+}
+
+export async function deleteTaskAttachment(taskId, attachmentId) {
+  const task = findTask(taskId)
+  if (!task) return
+
+  const previous = [...(task.attachments || [])]
+  task.attachments = previous.filter(attachment => attachment.id !== attachmentId)
+
+  try {
+    await api.delete(`/attachments/${attachmentId}`)
+  } catch (err) {
+    task.attachments = previous
+    throw err
+  }
+}
+
 export async function deleteTask(taskId, source, groupId) {
   const board = b(); if (!board) return
   const task = findTask(taskId)

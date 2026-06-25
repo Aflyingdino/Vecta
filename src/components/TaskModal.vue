@@ -1,13 +1,17 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { ui, closeTaskModal } from '@/stores/uiStore'
-import { createTask, updateTask, projectLabels, findTask } from '@/stores/boardStore'
+import { createTask, updateTask, uploadTaskAttachments, projectLabels, findTask } from '@/stores/boardStore'
 import ColorPicker from './ColorPicker.vue'
 import { STATUS_OPTIONS } from '@/utils/constants'
 
 const isEdit = computed(() => !!ui.editTaskId)
 
 const form = ref({ text: '', description: '', status: 'not_started', deadline: '', labelIds: [], mainColor: null, color: null })
+const fileInput = ref(null)
+const stagedFiles = ref([])
+const isAttachmentDragOver = ref(false)
+const saving = ref(false)
 
 watch(
   () => ui.taskModalOpen,
@@ -29,6 +33,8 @@ watch(
     } else {
       form.value = { text: '', description: '', status: 'not_started', deadline: '', labelIds: [], mainColor: null, color: null }
     }
+    stagedFiles.value = []
+    isAttachmentDragOver.value = false
   },
 )
 
@@ -38,7 +44,49 @@ function toggleLabel(labelId) {
   else form.value.labelIds.splice(idx, 1)
 }
 
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function addFiles(files) {
+  const incoming = Array.from(files || [])
+  if (!incoming.length) return
+
+  const existingKeys = new Set(stagedFiles.value.map(file => `${file.name}:${file.size}:${file.lastModified}`))
+  const next = [...stagedFiles.value]
+  for (const file of incoming) {
+    const key = `${file.name}:${file.size}:${file.lastModified}`
+    if (!existingKeys.has(key)) {
+      next.push(file)
+      existingKeys.add(key)
+    }
+  }
+  stagedFiles.value = next
+}
+
+function onFileInputChange(event) {
+  addFiles(event.target.files)
+  event.target.value = ''
+}
+
+function onAttachmentDrop(event) {
+  isAttachmentDragOver.value = false
+  addFiles(event.dataTransfer?.files)
+}
+
+function removeStagedFile(index) {
+  stagedFiles.value.splice(index, 1)
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 async function submit() {
+  if (saving.value) return
   const text = form.value.text.trim()
   const desc = form.value.description.trim()
   
@@ -71,15 +119,24 @@ async function submit() {
   }
   
   try {
+    saving.value = true
+    let savedTask = null
     if (isEdit.value) {
       await updateTask(ui.editTaskId, data)
+      savedTask = findTask(ui.editTaskId)
     } else {
-      await createTask(data)
+      savedTask = await createTask(data)
+    }
+
+    if (savedTask?.id && stagedFiles.value.length) {
+      await uploadTaskAttachments(savedTask.id, stagedFiles.value)
     }
     closeTaskModal()
   } catch (err) {
     console.error('Failed to save task:', err)
     // Keep modal open so user can retry
+  } finally {
+    saving.value = false
   }
 }
 </script>
@@ -177,14 +234,37 @@ async function submit() {
               </div>
             </div>
 
-            <!-- Media (placeholder — backend TODO) -->
+            <!-- Attachments -->
             <div class="field">
               <label class="field-label">Attachments</label>
-              <div class="media-placeholder">
+              <input ref="fileInput" type="file" multiple class="file-input" @change="onFileInputChange" />
+              <div
+                class="attachment-dropzone"
+                :class="{ 'attachment-dropzone--over': isAttachmentDragOver }"
+                @click="triggerFileInput"
+                @dragenter.prevent="isAttachmentDragOver = true"
+                @dragover.prevent="isAttachmentDragOver = true"
+                @dragleave.prevent="isAttachmentDragOver = false"
+                @drop.prevent="onAttachmentDrop"
+              >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                 </svg>
-                <span>File upload — backend required (see TODO)</span>
+                <div class="attachment-dropzone-copy">
+                  <span>Sleep bestanden hierheen of klik om te kiezen</span>
+                  <small>Maximaal 10MB per bestand</small>
+                </div>
+              </div>
+              <div v-if="stagedFiles.length" class="staged-files">
+                <div v-for="(file, index) in stagedFiles" :key="`${file.name}-${file.size}-${file.lastModified}`" class="staged-file">
+                  <div class="staged-file-info">
+                    <span class="staged-file-name">{{ file.name }}</span>
+                    <span class="staged-file-size">{{ formatFileSize(file.size) }}</span>
+                  </div>
+                  <button type="button" class="staged-file-remove" @click="removeStagedFile(index)" title="Verwijder bestand">
+                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -194,9 +274,9 @@ async function submit() {
               <button
                 type="submit"
                 class="btn-primary"
-                :disabled="!form.text.trim()"
+                :disabled="!form.text.trim() || saving"
               >
-                {{ isEdit ? 'Save changes' : 'Create task' }}
+                {{ saving ? 'Saving...' : (isEdit ? 'Save changes' : 'Create task') }}
               </button>
             </div>
           </form>
@@ -354,7 +434,10 @@ async function submit() {
   background: var(--lc, var(--color-accent));
   flex-shrink: 0;
 }
-.media-placeholder {
+.file-input {
+  display: none;
+}
+.attachment-dropzone {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -363,7 +446,71 @@ async function submit() {
   border-radius: 6px;
   color: var(--color-text-3);
   font-size: 12px;
-  font-style: italic;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.attachment-dropzone:hover,
+.attachment-dropzone--over {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text-1);
+}
+.attachment-dropzone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.attachment-dropzone-copy small {
+  color: var(--color-text-3);
+  font-size: 11px;
+}
+.staged-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.staged-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-1);
+}
+.staged-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.staged-file-name {
+  color: var(--color-text-1);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.staged-file-size {
+  color: var(--color-text-3);
+  font-size: 11px;
+}
+.staged-file-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-3);
+  cursor: pointer;
+}
+.staged-file-remove:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 .field-hint-inline {
   font-size: 11px;

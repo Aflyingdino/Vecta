@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { ui, closeTaskDetail, openEditTask } from '@/stores/uiStore'
 import { toggleMuteTask, mutedTaskIds } from '@/stores/notificationStore'
-import { findTask, addComment, deleteTask, archiveTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, updateTask } from '@/stores/boardStore'
+import { findTask, addComment, deleteTask, archiveTask, projectLabels, addNote, updateNote, deleteNote, pinComment, deleteComment, editComment, uploadTaskAttachments, deleteTaskAttachment } from '@/stores/boardStore'
 import { activeProject } from '@/stores/projectStore'
 import { t } from '@/utils/i18n'
 import { user } from '@/stores/authStore'
@@ -160,45 +160,16 @@ async function handleFileUpload(event) {
   }
   
   try {
-    const existing = task.value.attachments ?? []
-    const added = files.map(file => {
-      const objectUrl = URL.createObjectURL(file)
-      // Track URL for cleanup
-      task.value._pendingObjectUrls = task.value._pendingObjectUrls || []
-      task.value._pendingObjectUrls.push(objectUrl)
-      return {
-        id: Date.now() + Math.random(),
-        filename: file.name,
-        url: objectUrl,
-        mime_type: file.type,
-        size_bytes: file.size,
-        uploaded_at: new Date().toISOString(),
-      }
-    })
-    
-    await updateTask(task.value.id, { attachments: [...existing, ...added] })
+    await uploadTaskAttachments(task.value.id, files)
     event.target.value = ''
   } catch (err) {
     console.error('Failed to upload files:', err)
-    // Revoke any created object URLs on error
-    if (task.value._pendingObjectUrls) {
-      for (const url of task.value._pendingObjectUrls) {
-        URL.revokeObjectURL(url)
-      }
-      task.value._pendingObjectUrls = []
-    }
   }
 }
 
 function removeAttachment(attachId) {
   if (!task.value) return
-  const attachment = (task.value.attachments ?? []).find(a => a.id === attachId)
-  // Revoke object URLs to free memory
-  if (attachment?.url?.startsWith('blob:')) {
-    URL.revokeObjectURL(attachment.url)
-  }
-  const updated = (task.value.attachments ?? []).filter(a => a.id !== attachId)
-  updateTask(task.value.id, { attachments: updated })
+  deleteTaskAttachment(task.value.id, attachId)
 }
 
 function formatFileSize(bytes) {

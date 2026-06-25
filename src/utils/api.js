@@ -116,10 +116,50 @@ async function request(path, options = {}, allowRetry = true) {
   return data
 }
 
+async function upload(path, formData, allowRetry = true) {
+  const headers = {
+    Accept: 'application/json',
+    [CSRF_HEADER]: await fetchCsrfToken(),
+  }
+
+  const res = await fetch(buildUrl(path), {
+    method: 'POST',
+    body: formData,
+    headers,
+    credentials: 'include',
+  })
+
+  if (!useFallbackRouting && res.status === 404) {
+    useFallbackRouting = true
+    return upload(path, formData, allowRetry)
+  }
+
+  if (res.status === 419 && allowRetry) {
+    await fetchCsrfToken(true)
+    return upload(path, formData, false)
+  }
+
+  const data = await parseJson(res)
+
+  if (data?.csrfToken) {
+    csrfToken = data.csrfToken
+  }
+
+  if (!res.ok) {
+    const error = new Error(data.error || `Request failed (${res.status})`)
+    error.status = res.status
+    error.data = data
+    throw error
+  }
+
+  return data
+}
+
 export const api = {
   initSecurity: () => fetchCsrfToken(),
   get:    (path) => request(path),
   post:   (path, body = {}) => request(path, { method: 'POST',   body: JSON.stringify(body) }),
   patch:  (path, body = {}) => request(path, { method: 'PATCH',  body: JSON.stringify(body) }),
   delete: (path) => request(path, { method: 'DELETE' }),
+  upload,
 }
