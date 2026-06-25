@@ -107,6 +107,7 @@ function fetchFullProject(int $projectId, string $role): array
     $taskAssigneeMap = [];
     $taskCommentMap  = [];
     $taskNoteMap     = [];
+    $taskAttachmentMap = [];
 
     if ($taskIds) {
         $placeholders = implode(',', array_fill(0, count($taskIds), '?'));
@@ -168,6 +169,27 @@ function fetchFullProject(int $projectId, string $role): array
                 'createdAt'   => $r['created_at'],
             ];
         }
+
+        // Attachments
+        $stmt = $db->prepare("
+            SELECT attachment_id, task_id, uploaded_by, filename, url, mime_type, size_bytes, uploaded_at
+            FROM attachments
+            WHERE task_id IN ($placeholders)
+            ORDER BY uploaded_at, attachment_id
+        ");
+        $stmt->execute($taskIds);
+        foreach ($stmt->fetchAll() as $r) {
+            $attachmentId = (int) $r['attachment_id'];
+            $taskAttachmentMap[(int)$r['task_id']][] = [
+                'id'          => $attachmentId,
+                'filename'    => $r['filename'],
+                'url'         => '/api/attachments/' . $attachmentId . '/download',
+                'mime_type'   => $r['mime_type'] ?? null,
+                'size_bytes'  => isset($r['size_bytes']) ? (int) $r['size_bytes'] : null,
+                'uploaded_at' => $r['uploaded_at'],
+                'uploadedBy'  => (int) $r['uploaded_by'],
+            ];
+        }
     }
 
     // Group labels
@@ -183,7 +205,7 @@ function fetchFullProject(int $projectId, string $role): array
     }
 
     // Build task objects
-    $buildTask = function(array $r) use ($taskLabelMap, $taskAssigneeMap, $taskCommentMap, $taskNoteMap): array {
+    $buildTask = function(array $r) use ($taskLabelMap, $taskAssigneeMap, $taskCommentMap, $taskNoteMap, $taskAttachmentMap): array {
         $tid = (int) $r['task_id'];
         return [
             'id'               => $tid,
@@ -201,7 +223,7 @@ function fetchFullProject(int $projectId, string $role): array
             'calendarStart'    => $r['scheduled_start'],
             'calendarDuration' => $r['duration_minutes'],
             'notes'            => $taskNoteMap[$tid] ?? [],
-            'attachments'      => [],
+            'attachments'      => $taskAttachmentMap[$tid] ?? [],
             'comments'         => $taskCommentMap[$tid] ?? [],
             'archivedAt'       => $r['archived_at'] ?? null,
             'createdAt'        => $r['created_at'],

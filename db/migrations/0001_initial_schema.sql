@@ -138,6 +138,8 @@ CREATE TABLE IF NOT EXISTS attachments (
     uploaded_by   INT NOT NULL,
     filename      VARCHAR(255) NOT NULL,
     url           VARCHAR(512) NOT NULL,
+    mime_type     VARCHAR(150) DEFAULT NULL,
+    size_bytes    INT DEFAULT NULL,
     uploaded_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_attach_task FOREIGN KEY (task_id)     REFERENCES tasks(task_id) ON DELETE SET NULL,
     CONSTRAINT fk_attach_user FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE CASCADE

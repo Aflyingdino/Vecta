@@ -106,6 +106,9 @@ function defineRoutes(): array
         route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
         route('PATCH', '/tasks/{id}/schedule', static fn(array $p) => handleScheduleTask((int) $p['id'])),
         route('DELETE', '/tasks/{id}/schedule', static fn(array $p) => handleUnscheduleTask((int) $p['id'])),
+        route('POST', '/tasks/{id}/attachments', static fn(array $p) => handleUploadTaskAttachments((int) $p['id'])),
+        route('GET', '/attachments/{id}/download', static fn(array $p) => handleDownloadAttachment((int) $p['id'])),
+        route('DELETE', '/attachments/{id}', static fn(array $p) => handleDeleteAttachment((int) $p['id'])),
         route('POST', '/tasks/{id}/archive', static fn(array $p) => handleArchiveTask((int) $p['id'])),
         route('POST', '/tasks/{id}/restore', static fn(array $p) => handleRestoreTask((int) $p['id'])),
 

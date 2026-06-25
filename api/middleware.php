@@ -14,7 +14,11 @@ function requireCsrfProtection(): void
 
 function applyRequestGuards(string $method, string $path): void
 {
-    if (($method === 'POST' || $method === 'PATCH') && requestHasBody()) {
+    $isMultipartUpload = $method === 'POST'
+        && preg_match('#^/tasks/\d+/attachments$#', $path)
+        && str_contains(strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data');
+
+    if (($method === 'POST' || $method === 'PATCH') && requestHasBody() && !$isMultipartUpload) {
         requireJsonRequest();
     }
 

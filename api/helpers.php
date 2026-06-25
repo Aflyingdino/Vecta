@@ -377,6 +377,24 @@ function ensureRuntimeSchema(): void
     runtimeAddColumn('users', 'subscription_next_starts_at', 'ALTER TABLE users ADD COLUMN subscription_next_starts_at DATETIME DEFAULT NULL AFTER subscription_next_plan');
     runtimeAddColumn('users', 'subscription_next_expires_at', 'ALTER TABLE users ADD COLUMN subscription_next_expires_at DATETIME DEFAULT NULL AFTER subscription_next_starts_at');
     runtimeAddColumn('tasks', 'archived_at', 'ALTER TABLE tasks ADD COLUMN archived_at DATETIME DEFAULT NULL AFTER created_at');
+    if (!runtimeTableExists('attachments')) {
+        db()->exec("
+            CREATE TABLE attachments (
+                attachment_id INT AUTO_INCREMENT PRIMARY KEY,
+                task_id INT DEFAULT NULL,
+                uploaded_by INT NOT NULL,
+                filename VARCHAR(255) NOT NULL,
+                url VARCHAR(512) NOT NULL,
+                mime_type VARCHAR(150) DEFAULT NULL,
+                size_bytes INT DEFAULT NULL,
+                uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_attach_task FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE SET NULL,
+                CONSTRAINT fk_attach_user FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
+        ");
+    }
+    runtimeAddColumn('attachments', 'mime_type', 'ALTER TABLE attachments ADD COLUMN mime_type VARCHAR(150) DEFAULT NULL AFTER url');
+    runtimeAddColumn('attachments', 'size_bytes', 'ALTER TABLE attachments ADD COLUMN size_bytes INT DEFAULT NULL AFTER mime_type');
 
     if (!runtimeTableExists('project_invitations')) {
         db()->exec("

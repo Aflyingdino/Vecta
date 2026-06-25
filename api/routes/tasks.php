@@ -30,6 +30,186 @@ function requireProjectGroup(?int $groupId, int $projectId): ?int
     return $groupId;
 }
 
+function attachmentStorageDir(): string
+{
+    return __DIR__ . '/../storage/attachments';
+}
+
+function ensureAttachmentStorageDir(): string
+{
+    $dir = attachmentStorageDir();
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        jsonError('Unable to prepare attachment storage', 500);
+    }
+    return $dir;
+}
+
+function publicAttachmentUrl(int $attachmentId): string
+{
+    return '/api/attachments/' . $attachmentId . '/download';
+}
+
+function buildAttachmentResponse(array $row): array
+{
+    $id = (int) $row['attachment_id'];
+    $attachments = fetchTaskAttachments($tid);
+
+    return [
+        'id'         => $id,
+        'filename'   => $row['filename'],
+        'url'        => publicAttachmentUrl($id),
+        'mime_type'  => $row['mime_type'] ?? null,
+        'size_bytes' => isset($row['size_bytes']) ? (int) $row['size_bytes'] : null,
+        'uploaded_at'=> $row['uploaded_at'],
+        'uploadedBy' => (int) $row['uploaded_by'],
+    ];
+}
+
+function fetchTaskAttachments(int $taskId): array
+{
+    $stmt = db()->prepare('
+        SELECT attachment_id, uploaded_by, filename, url, mime_type, size_bytes, uploaded_at
+        FROM attachments
+        WHERE task_id = ?
+        ORDER BY uploaded_at, attachment_id
+    ');
+    $stmt->execute([$taskId]);
+    return array_map(static fn($row) => buildAttachmentResponse($row), $stmt->fetchAll());
+}
+
+function normalizeUploadedFiles(array $files): array
+{
+    if (!isset($files['name'])) {
+        return [];
+    }
+
+    if (is_array($files['name'])) {
+        $normalized = [];
+        foreach ($files['name'] as $idx => $name) {
+            $normalized[] = [
+                'name' => $name,
+                'type' => $files['type'][$idx] ?? '',
+                'tmp_name' => $files['tmp_name'][$idx] ?? '',
+                'error' => $files['error'][$idx] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $files['size'][$idx] ?? 0,
+            ];
+        }
+        return $normalized;
+    }
+
+    return [$files];
+}
+
+function safeAttachmentFilename(string $name): string
+{
+    $name = basename($name);
+    $name = preg_replace('/[^\w.\- ()]/u', '_', $name) ?? 'attachment';
+    $name = trim($name, " .\t\n\r\0\x0B");
+    return $name !== '' ? mb_substr($name, 0, 180) : 'attachment';
+}
+
+function handleUploadTaskAttachments(int $taskId): never
+{
+    ensureRuntimeSchema();
+    $uid  = requireAuth();
+    $task = resolveTask($taskId, $uid);
+    requireProjectWritable((int) $task['project_id'], $uid);
+
+    $files = normalizeUploadedFiles($_FILES['files'] ?? $_FILES['file'] ?? []);
+    if (!$files) {
+        jsonError('No files uploaded', 422);
+    }
+
+    $storageDir = ensureAttachmentStorageDir();
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $created = [];
+    $maxBytes = 10 * 1024 * 1024;
+
+    foreach ($files as $file) {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            jsonError('Upload failed', 422);
+        }
+        if (($file['size'] ?? 0) <= 0 || ($file['size'] ?? 0) > $maxBytes) {
+            jsonError('Each attachment must be 10MB or smaller', 422);
+        }
+        if (!is_uploaded_file($file['tmp_name'])) {
+            jsonError('Invalid uploaded file', 422);
+        }
+
+        $filename = safeAttachmentFilename((string) $file['name']);
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $storedName = bin2hex(random_bytes(16)) . ($extension ? '.' . $extension : '');
+        $targetPath = $storageDir . '/' . $storedName;
+
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            jsonError('Unable to store uploaded file', 500);
+        }
+
+        $mimeType = $finfo->file($targetPath) ?: ($file['type'] ?: 'application/octet-stream');
+        $size = filesize($targetPath) ?: (int) $file['size'];
+
+        db()->prepare('
+            INSERT INTO attachments (task_id, uploaded_by, filename, url, mime_type, size_bytes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ')->execute([$taskId, $uid, $filename, $storedName, $mimeType, $size]);
+
+        $attachmentId = (int) db()->lastInsertId();
+        $stmt = db()->prepare('SELECT * FROM attachments WHERE attachment_id = ?');
+        $stmt->execute([$attachmentId]);
+        $created[] = buildAttachmentResponse($stmt->fetch());
+    }
+
+    logActivity((int)$task['project_id'], $uid, 'attachment_uploaded', count($created) . ' attachment(s) uploaded to "' . $task['title'] . '"');
+
+    jsonResponse($created, 201);
+}
+
+function resolveAttachment(int $attachmentId, int $userId): array
+{
+    $stmt = db()->prepare('
+        SELECT a.*, t.project_id, t.title AS task_title
+        FROM attachments a
+        JOIN tasks t ON t.task_id = a.task_id
+        WHERE a.attachment_id = ?
+    ');
+    $stmt->execute([$attachmentId]);
+    $attachment = $stmt->fetch();
+    if (!$attachment) jsonError('Attachment not found', 404);
+    requireProjectAccess((int) $attachment['project_id'], $userId);
+    return $attachment;
+}
+
+function handleDownloadAttachment(int $attachmentId): never
+{
+    $uid = requireAuth();
+    $attachment = resolveAttachment($attachmentId, $uid);
+    $path = attachmentStorageDir() . '/' . basename((string) $attachment['url']);
+    if (!is_file($path)) {
+        jsonError('Attachment file not found', 404);
+    }
+
+    header('Content-Type: ' . ($attachment['mime_type'] ?: 'application/octet-stream'));
+    header('Content-Length: ' . (string) filesize($path));
+    header('Content-Disposition: inline; filename="' . addcslashes((string) $attachment['filename'], '"\\') . '"');
+    readfile($path);
+    exit;
+}
+
+function handleDeleteAttachment(int $attachmentId): never
+{
+    $uid = requireAuth();
+    $attachment = resolveAttachment($attachmentId, $uid);
+    requireProjectWritable((int) $attachment['project_id'], $uid);
+
+    $path = attachmentStorageDir() . '/' . basename((string) $attachment['url']);
+    db()->prepare('DELETE FROM attachments WHERE attachment_id = ?')->execute([$attachmentId]);
+    if (is_file($path)) {
+        @unlink($path);
+    }
+
+    jsonSuccess('Attachment deleted');
+}
+
 function handleCreateTask(int $projectId): never
 {
     $uid = requireAuth();
@@ -360,6 +540,8 @@ function buildTaskResponse(int $taskId): array
         'createdAt'   => $r['created_at'],
     ], $stmt->fetchAll());
 
+    $attachments = fetchTaskAttachments($tid);
+
     return [
         'id'               => $tid,
         'text'             => $t['title'],
@@ -376,7 +558,7 @@ function buildTaskResponse(int $taskId): array
         'calendarStart'    => $t['scheduled_start'],
         'calendarDuration' => $t['duration_minutes'],
         'notes'            => $notes,
-        'attachments'      => [],
+        'attachments'      => $attachments,
         'comments'         => $comments,
         'archivedAt'       => $t['archived_at'] ?? null,
         'createdAt'        => $t['created_at'],
