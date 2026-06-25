@@ -271,6 +271,13 @@ function parseDragPayload(event) {
   }
 }
 
+function allTasksForProject(project) {
+  return [
+    ...(project?.backlog ?? []),
+    ...((project?.groups ?? []).flatMap(group => group.tasks ?? [])),
+  ]
+}
+
 async function onDrop(event, dayDate) {
   event.preventDefault()
   dragOverCell.value = null
@@ -282,7 +289,11 @@ async function onDrop(event, dayDate) {
 
   let minute = minuteFromEvent(event)
   const p = projects.value.find(p => p.id === projectId)
-  const task = p ? [...p.backlog, ...p.groups.flatMap(g => g.tasks)].find(t => t.id === taskId) : null
+  const task = p ? allTasksForProject(p).find(task => task.id === taskId) : null
+  if (!task || !Number.isFinite(minute)) {
+    dragGrabOffsetMin.value = 0
+    return
+  }
   const duration = task?.calendarDuration ?? 60
   const others = tasksOnDay(dayDate, taskId)
   if (isBeyondDeadline(task, dayDate, minute)) {
@@ -344,6 +355,7 @@ function snapMinute(offsetY) {
 function buildCalendarDateTime(date, minute) {
   const d = new Date(date)
   d.setHours(Math.floor(minute / 60), minute % 60, 0, 0)
+  if (Number.isNaN(d.getTime())) return null
   const pad = value => String(value).padStart(2, '0')
   return [
     d.getFullYear(),
@@ -563,23 +575,23 @@ function deadlineTasksForDay(date) {
                 class="sb-task-empty"
               >{{ t('noTasks') }}</div>
               <div
-                v-for="t in p.allTasks"
-                :key="t.id"
+                v-for="task in p.allTasks"
+                :key="task.id"
                 class="sb-task-item"
                 :class="{ 
-                  'sb-task-item--scheduled': !!t.calendarStart,
-                  'sb-task-item--overdue': isTaskOverdue(t)
+                  'sb-task-item--scheduled': !!task.calendarStart,
+                  'sb-task-item--overdue': isTaskOverdue(task)
                 }"
                 draggable="true"
-                @dragstart="onTaskDragStart($event, t, p)"
+                @dragstart="onTaskDragStart($event, task, p)"
               >
                 <span class="sb-task-drag">
                   <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"/>
                   </svg>
                 </span>
-                <span class="sb-task-text">{{ t.text }}</span>
-                <span v-if="t.calendarStart" class="sb-task-scheduled-dot" :style="{ background: p.color }"></span>
+                <span class="sb-task-text">{{ task.text }}</span>
+                <span v-if="task.calendarStart" class="sb-task-scheduled-dot" :style="{ background: p.color }"></span>
               </div>
             </div>
           </div>
@@ -794,13 +806,13 @@ function deadlineTasksForDay(date) {
               <span class="dl-cell-date">{{ day.date.getDate() }}</span>
               <div class="dl-tasks">
                 <div
-                  v-for="t in deadlineTasksForDay(day.date)"
-                  :key="t.id"
+                  v-for="task in deadlineTasksForDay(day.date)"
+                  :key="task.id"
                   class="dl-task"
-                  :style="{ '--tc': t.calendarColor || t._projectColor }"
-                  @click="openTaskDetail(t.id)"
+                  :style="{ '--tc': task.calendarColor || task._projectColor }"
+                  @click="openTaskDetail(task.id)"
                 >
-                  {{ t.text }}
+                  {{ task.text }}
                 </div>
               </div>
             </div>

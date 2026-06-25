@@ -276,7 +276,7 @@ function onDragEnd() {
             </div>
             <!-- Task preview -->
             <div class="archive-task-preview" v-if="group.tasks.length">
-              <span v-for="t in group.tasks.slice(0, 4)" :key="t.id" class="archive-task-pill">{{ t.text }}</span>
+              <span v-for="task in group.tasks.slice(0, 4)" :key="task.id" class="archive-task-pill">{{ task.text }}</span>
               <span v-if="group.tasks.length > 4" class="archive-task-more">+{{ group.tasks.length - 4 }} meer</span>
             </div>
             <div class="archive-card-actions">

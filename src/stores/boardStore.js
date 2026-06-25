@@ -183,6 +183,7 @@ export async function renameGroup(groupId, newName) {
 /* -- Task actions -- */
 export async function createTask(data, targetType, targetId) {
   const board = b(); if (!board) return
+  const groupId = targetType === 'group' && targetId != null ? Number(targetId) : null
 
   const payload = {
     text: data.text,
@@ -196,7 +197,7 @@ export async function createTask(data, targetType, targetId) {
     mainColor: data.mainColor || null,
     color: data.color || null,
     calendarColor: data.calendarColor || null,
-    groupId: (targetType === 'group' && targetId != null) ? targetId : null,
+    groupId,
   }
 
   try {
@@ -205,8 +206,8 @@ export async function createTask(data, targetType, targetId) {
     task.comments = task.comments || []
     task.attachments = task.attachments || []
 
-    if (targetType === 'group' && targetId != null) {
-      const group = board.groups.find(g => g.id === targetId)
+    if (groupId !== null) {
+      const group = board.groups.find(g => g.id === groupId)
       if (group) {
         group.tasks.push(task)
         logActivity(board.id, 'task_added', `${actor()} added task "${data.text}"`)
@@ -575,21 +576,40 @@ export async function deleteLabel(labelId) {
 /* -- Drag & Drop -- */
 export async function moveTaskToGroup(taskId, targetGroupId) {
   const board = b(); if (!board) return
+  targetGroupId = Number(targetGroupId)
   let task = null
+  let source = null
+  let sourceIndex = -1
   const backlogIdx = board.backlog.findIndex((t) => t.id === taskId)
   if (backlogIdx !== -1) {
     task = board.backlog.splice(backlogIdx, 1)[0]
+    source = board.backlog
+    sourceIndex = backlogIdx
   } else {
     for (const group of board.groups) {
       const idx = group.tasks.findIndex((t) => t.id === taskId)
-      if (idx !== -1) { task = group.tasks.splice(idx, 1)[0]; break }
+      if (idx !== -1) {
+        task = group.tasks.splice(idx, 1)[0]
+        source = group.tasks
+        sourceIndex = idx
+        break
+      }
     }
   }
   if (task) {
     const targetGroup = board.groups.find((g) => g.id === targetGroupId)
     if (targetGroup) {
       targetGroup.tasks.push(task)
-      await api.patch(`/tasks/${taskId}/move`, { groupId: targetGroupId })
+      try {
+        const savedTask = await api.patch(`/tasks/${taskId}/move`, { groupId: targetGroupId })
+        if (savedTask) Object.assign(task, savedTask)
+      } catch (err) {
+        targetGroup.tasks = targetGroup.tasks.filter((t) => t.id !== taskId)
+        if (source) source.splice(Math.max(sourceIndex, 0), 0, task)
+        throw err
+      }
+    } else if (source) {
+      source.splice(Math.max(sourceIndex, 0), 0, task)
     }
   }
 }
@@ -601,7 +621,14 @@ export async function moveTaskToBacklog(taskId) {
     if (idx !== -1) {
       const task = group.tasks.splice(idx, 1)[0]
       board.backlog.push(task)
-      await api.patch(`/tasks/${taskId}/move`, { groupId: null })
+      try {
+        const savedTask = await api.patch(`/tasks/${taskId}/move`, { groupId: null })
+        if (savedTask) Object.assign(task, savedTask)
+      } catch (err) {
+        board.backlog = board.backlog.filter((t) => t.id !== taskId)
+        group.tasks.splice(idx, 0, task)
+        throw err
+      }
       return
     }
   }
